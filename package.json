@@ -1,0 +1,26 @@
+{
+  "name": "cachix-knockoff",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "dev": "bun run ./index.ts | pino-pretty"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.1",
+    "@types/restify": "^8.5.12",
+    "express": "^5.1.0",
+    "express-file-routing": "^3.1.0",
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0",
+    "pino-pretty": "^13.0.0",
+    "postman": "^0.2.0",
+    "restify": "^11.1.0"
+  }
+}
