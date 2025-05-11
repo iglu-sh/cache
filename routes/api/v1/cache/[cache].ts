@@ -26,6 +26,7 @@ export const get = [
             ],
             "uri": "http://0.0.0.0"
         }
+        await Database.close()
         return res.json(returnInfo);
     }
 ]
