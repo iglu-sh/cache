@@ -1,0 +1,8 @@
+server:
+  database:
+    db-host: "localhost"
+    db-port: 5432
+    db-user: "postgres"
+    db-password: "password"
+  key: "boerg-inc"
+  retention: 4 # in days

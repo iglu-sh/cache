@@ -10,6 +10,19 @@ const pino = require('pino-http')()
 
 let parseJson = bodyParser.json()
 
+type configObject = {
+    "server" : {
+        "database" : {
+            "dbHost":string,
+            "dbPort":number,
+            "dbUser":string,
+            "dbPassword":string,
+        }
+        key: string,
+        retention: 4
+    }
+}
+
 //app.use(pino)
 // Middleware to handle all routes
 const Database = new db();
@@ -20,13 +33,11 @@ await createRouter(app, {
     additionalMethods: [ "ws" ]
 })
 
-//app.use("/", await router())
-app.use((req, res) => {
-//    req.log.info(req.url)
+app.use((req:Request, res:Response) => {
+    //req.log.info(req.url)
     console.log('CATCHALL', req.url)
-
     if(req.body){
-    //    console.log('Req body', req.body)
+        //console.log('Req body', req.body)
         //fs.writeFileSync(__dirname + "/req.json", JSON.stringify(req.body), "utf8")
     }
     res.status(200).send('OK');
