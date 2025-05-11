@@ -9,7 +9,6 @@ export const post = [
             res.status(405).send('Method Not Allowed');
             return;
         }
-        console.log(req.body);
 
         const Database = new db();
         // Check if cache exists
@@ -20,7 +19,6 @@ export const post = [
 
         //Get a random uuid for relating the store hash to the upload
         const uid = randomUUID()
-        console.log('Num for multipart tracking', uid)
         await Database.close();
         return res.status(200).json({
             "narId": uid,

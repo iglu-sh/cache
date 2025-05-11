@@ -15,7 +15,6 @@ export const post = [
             res.status(404).send('Cache Not Found');
             return;
         }
-        console.log(req.params.cache);
 
         //Validate if the body is valid (i.e it is a JSON Array of only strings)
         req.body.map((x: any) => {
@@ -28,7 +27,13 @@ export const post = [
             res.status(400).send('Invalid Body');
             return;
         }
+
+        const pathsInDB = await Database.getAvailablePaths(req.params.cache, req.body)
         await Database.close();
-        return res.status(200).json(req.body)
+
+        //Build a new Array with the paths that are not in the database
+        const pathsNotInDB = req.body.filter((x: string) => !pathsInDB.includes(x))
+
+        return res.status(200).json(pathsNotInDB)
     }
 ]

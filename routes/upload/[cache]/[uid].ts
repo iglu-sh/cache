@@ -10,8 +10,6 @@ export const put = async (req:Request, res:Response)=>{
             error: 'Method not allowed',
         })
     }
-    console.log(req.url);
-
 
     //Check if the request is an application/octet-stream request
     if(!req.headers['content-type']?.startsWith('application/octet-stream')){
@@ -42,7 +40,6 @@ export const put = async (req:Request, res:Response)=>{
     //Handle the end of the request
     req.on('end', () => {
         writeStream.end()
-        console.log("End")
     })
     //Handle the finish on the write stream
     writeStream.on("finish", async ()=>{

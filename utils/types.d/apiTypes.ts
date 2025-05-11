@@ -7,3 +7,24 @@ export type CacheInfo = {
     publicSigningKeys: Array<string>;
     uri: string;
 }
+
+export type narInfoCreate = {
+    cDeriver: string,
+    cFileHash: string,
+    cFileSize: number,
+    cNarHash: string,
+    cNarSize: number,
+    cReferences: Array<string>,
+    cSig: null,
+    cStoreHash: string,
+    cStoreSuffix: string
+}
+export type partsInfo = {
+    eTag:string,
+    partNumber: number
+}
+
+export type narUploadSuccessRequestBody = {
+    narInfoCreate: narInfoCreate,
+    parts: Array<partsInfo>
+}
