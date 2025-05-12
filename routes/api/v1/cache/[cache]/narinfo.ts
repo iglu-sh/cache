@@ -1,6 +1,7 @@
 import bodyParser, {type Request, type Response} from "express";
 import type {CacheInfo} from "../../../../../utils/types.d/apiTypes.ts";
 import db from "../../../../../utils/db.ts";
+import {isAuthenticated} from "../../../../../utils/middlewares/auth.ts";
 
 export const post = [
     bodyParser.json(),
@@ -9,6 +10,15 @@ export const post = [
             res.status(405).send('Method Not Allowed');
             return;
         }
+        //Check if the user is authenticated
+        const auth = await isAuthenticated(req, res, async () => {
+            return true
+        })
+        if(!auth){
+            return;
+        }
+
+
         const Database = new db();
         // Check if cache exists
         if(req.params.cache === undefined || await Database.getCacheID(req.params.cache) === -1){

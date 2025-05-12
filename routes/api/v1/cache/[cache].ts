@@ -1,6 +1,7 @@
 import bodyParser, { type Request, type Response } from 'express'
 import type {CacheInfo} from "../../../../utils/types.d/apiTypes.ts";
 import db from "../../../../utils/db.ts";
+import {isAuthenticated} from "../../../../utils/middlewares/auth.ts";
 export const get = [
     bodyParser.json(),
     async (req: Request, res: Response) => {
@@ -8,25 +9,31 @@ export const get = [
             res.status(405).send('Method Not Allowed');
             return;
         }
-        const Database = new db();
-        // Check if cache exists
-        if(req.params.cache === undefined || await Database.getCacheID(req.params.cache) === -1){
-            res.status(404).send('Cache Not Found');
+        //Check if the user is authenticated
+        const auth = await isAuthenticated(req, res, async () => {
+            return true
+        })
+        if(!auth){
             return;
         }
 
-        const returnInfo:CacheInfo = {
-            "githubUsername": "",
-            "isPublic": true,
-            "name": "main",
-            "permission": "Read",
-            "preferredCompressionMethod": "XZ",
-            "publicSigningKeys": [
-                "0.0.0.0-1:CjwLgnUb157vhyNHrmBgaRGUISGIY6Q8rJ9oKK95gA8="
-            ],
-            "uri": "http://0.0.0.0"
+        const Database = new db();
+
+        //This function wraps the response so that the Database can be closed at the end
+        async function wrap(){
+
+            if(req.params.cache === undefined || await Database.getCacheID(req.params.cache) === -1){
+                res.status(404).send('Cache Not Found');
+                return;
+            }
+            const cache = await Database.getCacheInfo(await Database.getCacheID(req.params.cache))
+            return res.json(cache);
         }
-        await Database.close()
-        return res.json(returnInfo);
+        await wrap().then(async ()=>{
+            await Database.close()
+        }).catch(e=>{
+            console.error(e)
+            res.status(500).send('Internal Server Error');
+        })
     }
 ]

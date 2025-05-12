@@ -15,6 +15,7 @@
   "dependencies": {
     "@electric-sql/pglite": "^0.3.0",
     "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.9",
     "@types/md5-file": "^5.0.0",
     "@types/pg": "^8.15.1",
     "@types/restify": "^8.5.12",
@@ -22,6 +23,7 @@
     "express-file-routing": "^3.1.0",
     "express-ws": "^5.0.2",
     "js-yaml": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
     "md5-file": "^5.0.0",
     "pg": "^8.15.6",
     "pino": "^9.6.0",

@@ -5,13 +5,22 @@ import bodyParser from "express";
 import type { Request, Response, NextFunction } from "express";
 import fs from 'fs'
 import Database from "../../../../../../../utils/db.ts";
+import {isAuthenticated} from "../../../../../../../utils/middlewares/auth.ts";
 export const post = [
     bodyParser.json(),
     async (req: Request, res: Response, next: NextFunction) => {
+
         if(req.method !== 'POST'){
             return res.status(405).json({
                 error: 'Method not allowed',
             })
+        }
+        //Check if the user is authenticated
+        const auth = await isAuthenticated(req, res, async () => {
+            return true
+        })
+        if(!auth){
+            return;
         }
 
         //Check if the request is an application/json request
@@ -60,7 +69,7 @@ export const post = [
                 error: 'Cache does not exist',
             })
         }
-
+        console.log(req.body)
         //Check if the request has a valid narInfoCreate object
         if(!req.body.narInfoCreate.cDeriver
             || !req.body.narInfoCreate.cFileHash
@@ -90,7 +99,7 @@ export const post = [
 
         //...and insert the narinfo into the database
         try{
-            await db.createStorePath(req.params.cache, req.body)
+            await db.createStorePath(req.params.cache, req.body, req.params.uid)
         }
         catch(e){
             console.error('Error inserting narInfo into database:', e)

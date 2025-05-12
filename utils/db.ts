@@ -1,5 +1,5 @@
 import { Client } from 'pg';
-import type {cache} from "./types.d/dbTypes.ts";
+import type {cache, storeNarInfo} from "./types.d/dbTypes.ts";
 import type {CacheInfo, narUploadSuccessRequestBody} from "./types.d/apiTypes.ts";
 export default class Database {
     private db:Client = new Client({
@@ -33,6 +33,7 @@ export default class Database {
                         permission TEXT,
                         preferredCompressionMethod TEXT,
                         publicSigningKeys TEXT[],
+                        allowedKeys TEXT[],
                         uri TEXT
                     )
             `)
@@ -75,7 +76,7 @@ export default class Database {
         }
     }
 
-    public async createStorePath(cache:string, narReturn:narUploadSuccessRequestBody):Promise<void>{
+    public async createStorePath(cache:string, narReturn:narUploadSuccessRequestBody, uid:string):Promise<void>{
         //Check if the cache exists (just to be sure)
         const cacheID = await this.getCacheID(cache)
         if(cacheID === -1){
@@ -90,7 +91,7 @@ export default class Database {
                 ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         `,
             [
-                `./nar_files/${cache}/${narReturn.narInfoCreate.cStoreHash}.nar.xz`,
+                `./nar_files/${cache}/${uid}.nar.xz`,
                 await this.getCacheID(cache),
                 narReturn.narInfoCreate.cDeriver,
                 narReturn.narInfoCreate.cFileHash,
@@ -131,14 +132,14 @@ export default class Database {
             if(caches.rows.length === 0 || caches.rows.length > 1){
                throw new Error('Cache not found or multiple caches with the same ID found')
             }
-
+            //console.log(caches.rows)
             return {
-                githubUsername: caches.rows[0].githubUsername,
-                isPublic: caches.rows[0].isPublic,
+                githubUsername: caches.rows[0].githubusername ? caches.rows[0].githubusername : '',
+                isPublic: caches.rows[0].ispublic,
                 name: caches.rows[0].name,
                 permission: caches.rows[0].permission,
-                preferredCompressionMethod: caches.rows[0].preferredCompressionMethod,
-                publicSigningKeys: caches.rows[0].publicSigningKeys,
+                preferredCompressionMethod: caches.rows[0].preferredcompressionmethod,
+                publicSigningKeys: caches.rows[0].publicsigningkeys,
                 uri: caches.rows[0].uri
             }
 
@@ -185,5 +186,59 @@ export default class Database {
 
     public async close():Promise<void> {
         return await this.db.end();
+    }
+
+    public async getAllCaches():Promise<Array<cache>> {
+        const caches = await this.db.query('SELECT * FROM cache.caches')
+        return caches.rows.map((row)=>{return {
+            id: row.id,
+            githubUsername: row.githubusername,
+            isPublic: row.ispublic,
+            name: row.name,
+            permission: row.permission,
+            preferredCompressionMethod: row.preferredcompressionmethod,
+            publicSigningKeys: row.publicsigningkeys,
+            allowedKeys: row.allowedkeys,
+            uri: row.uri
+        }})
+    }
+    public async getAllowedKeys(cache:number):Promise<Array<string>> {
+        const caches = await this.db.query('SELECT allowedKeys FROM cache.caches WHERE id = $1', [cache])
+        if(caches.rows.length === 0){
+            throw new Error('Cache not found')
+        }
+        return caches.rows[0].allowedkeys
+    }
+    public async appendApiKey(cache:number, key:string):Promise<void> {
+        await this.db.query('UPDATE cache.caches SET allowedKeys = array_append(allowedKeys, $1) WHERE id = $2', [key, cache])
+    }
+
+    public async getStoreNarInfo(cache:number, hash:string): Promise<storeNarInfo[]>{
+        const hashResults = await this.db.query('SELECT * FROM cache.hashes WHERE cache = $1 AND cstorehash = $2', [cache, hash])
+        return hashResults.rows.map((row)=>{
+            return {
+                id: row.id,
+                cache: row.cache,
+                cderiver: row.cderiver,
+                cfilehash: row.cfilehash,
+                cfilesize: row.cfilesize,
+                cnarhash: row.cnarhash,
+                cnarsize: row.cnarsize,
+                creferences: row.creferences,
+                csig: row.csig,
+                cstorehash: row.cstorehash,
+                cstoresuffix: row.cstoresuffix,
+                parts: row.parts,
+                path: row.path
+            } as storeNarInfo
+        })
+    }
+
+    public async getDerivationPath(cache:number, derivation:string): Promise<string>{
+        const hashResults = await this.db.query('SELECT path FROM cache.hashes WHERE cache = $1 AND cstorehash = $2', [cache, derivation])
+        if(hashResults.rows.length === 0){
+            throw new Error('Derivation not found')
+        }
+        return hashResults.rows[0].path
     }
 }

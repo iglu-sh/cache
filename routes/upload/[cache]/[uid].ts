@@ -1,6 +1,7 @@
 import type {Request, Response} from "express";
 import md5File from 'md5-file'
 import fs from 'fs'
+import {isAuthenticated} from "../../../utils/middlewares/auth.ts";
 function reqWasAborted(req:Request){
     return req.socket.destroyed || req.socket.readableEnded || req.socket.writableEnded
 }
@@ -9,6 +10,16 @@ export const put = async (req:Request, res:Response)=>{
         return res.status(405).json({
             error: 'Method not allowed',
         })
+    }
+    console.log(req.query)
+    console.log(req.headers)
+
+    //Check if the user is authenticated
+    const auth = await isAuthenticated(req, res, async () => {
+        return true
+    })
+    if(!auth){
+        return;
     }
 
     //Check if the request is an application/octet-stream request
