@@ -4,12 +4,14 @@ import {randomUUID} from "node:crypto";
 import {isAuthenticated} from "../../../../../utils/middlewares/auth.ts";
 
 export const post = [
-    bodyParser.json(),
+    bodyParser.json({limit: '50mb'}),
     async (req: Request, res: Response) => {
         if(req.method !== 'POST'){
             res.status(405).send('Method Not Allowed');
             return;
         }
+        console.log(req.url)
+        console.log(req.headers)
         //Check if the user is authenticated
         const auth = await isAuthenticated(req, res, async () => {
             return true

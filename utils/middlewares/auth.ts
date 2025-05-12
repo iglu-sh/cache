@@ -24,7 +24,6 @@ export async function isAuthenticated (req: any, res: any, next: any):Promise<bo
             res.status(403).json({ message: 'Forbidden' });
             return false;
         }
-
         if (!decoded) {
             res.status(403).json({ message: 'Forbidden' });
             return false

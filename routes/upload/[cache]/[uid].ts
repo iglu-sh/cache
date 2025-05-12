@@ -11,8 +11,6 @@ export const put = async (req:Request, res:Response)=>{
             error: 'Method not allowed',
         })
     }
-    console.log(req.query)
-    console.log(req.headers)
 
     //Check if the user is authenticated
     const auth = await isAuthenticated(req, res, async () => {

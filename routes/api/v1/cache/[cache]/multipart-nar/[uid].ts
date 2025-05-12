@@ -8,6 +8,7 @@ export const post = [
             res.status(405).send('Method Not Allowed');
             return;
         }
+        console.log(req.url)
         //Check if the user is authenticated
         const auth = await isAuthenticated(req, res, async () => {
             return true

@@ -50,9 +50,9 @@ export default class Database {
                     updatedAt TIMESTAMP default now() not null,
                     cDeriver TEXT NOT NULL,
                     cFileHash TEXT NOT NULL,
-                    cFileSize INTEGER NOT NULL,
+                    cFileSize BIGINT NOT NULL,
                     cNarHash TEXT NOT NULL,
-                    cNarSize INTEGER NOT NULL,
+                    cNarSize BIGINT NOT NULL,
                     cReferences TEXT[] NOT NULL,
                     cSig TEXT,
                     cStoreHash TEXT NOT NULL,
@@ -240,5 +240,27 @@ export default class Database {
             throw new Error('Derivation not found')
         }
         return hashResults.rows[0].path
+    }
+
+    public async createCache(name:string, permission:string, isPublic:boolean, githubUsername:string, preferredCompressionMethod:string, uri:string):Promise<void>{
+        await this.db.query(`
+            INSERT INTO cache.caches (name, permission, isPublic, githubUsername, preferredCompressionMethod, uri, publicSigningKeys, allowedKeys) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `, [name, permission, isPublic, githubUsername, preferredCompressionMethod, uri, [], []])
+    }
+
+    public getDirectAccess():Client{
+        return this.db
+    }
+
+    public async deletePath(id:number):Promise<void>{
+        await this.db.query('DELETE FROM cache.hashes WHERE id = $1', [id])
+    }
+
+    public async appendPublicKey(id:number, key:string):Promise<void>{
+        await this.db.query(
+            'UPDATE cache.caches SET publicSigningKeys = array_append(publicSigningKeys, $1) WHERE id = $2',
+            [key, id]
+        )
     }
 }

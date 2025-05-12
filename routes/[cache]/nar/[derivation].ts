@@ -4,6 +4,7 @@ import fs from "fs";
 export const get = [
     bodyParser.json(),
     async (req: Request, res: Response, next: NextFunction) => {
+        console.log(req.url)
         if(req.method !== 'GET'){
             return res.status(405).json({
                 error: 'Method not allowed',
@@ -14,12 +15,11 @@ export const get = [
                 error: 'Missing cache name or hash',
             })
         }
-
         // Return the cacheInfo
         const nixDerivationHash = req.params.derivation
         const cache = req.params.cache
         const Database = new db();
-
+        console.log(nixDerivationHash, req.url)
         async function wrap(){
            const cacheID = await Database.getCacheID(cache)
             if(!cacheID){

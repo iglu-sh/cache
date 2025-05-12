@@ -29,6 +29,12 @@ type configObject = {
 // Middleware to handle all routes
 const Database = new db();
 await Database.getAllCaches().then(async (caches:Array<cache>)=>{
+    if(caches.length === 0){
+        //Create a default cache
+        console.log('No caches found, creating default cache')
+        await Database.createCache("default", "Read", true, "none", "XZ", "http://localhost:3000")
+    }
+
     for (const cache of caches) {
         if(cache.allowedKeys.length === 0){
             const cacheKey = makeApiKey(cache.name)
@@ -45,11 +51,43 @@ await Database.getAllCaches().then(async (caches:Array<cache>)=>{
         console.log(`Public signing keys for cache ${cache.name}: ${cache.publicSigningKeys}`)
     }
 })
+
+//Check if there are "dangling" paths in the nar_file directory (i.e paths that are not in the database)
+
+const paths = await Database.getDirectAccess().query(`
+    SELECT path, id FROM cache.hashes 
+`)
+for(const pathObj of paths.rows){
+    if(!fs.existsSync(pathObj.path)){
+        console.log(`Path ${pathObj.path} does not exist, removing from database`)
+        //Delete the path from the database
+        await Database.deletePath(pathObj.id)
+    }
+
+    //Check how big the file is
+    const stats = fs.statSync(pathObj.path);
+    const fileSizeInBytes = stats.size;
+    if(fileSizeInBytes === 0){
+        console.log(`Path ${pathObj.path} is empty, removing from database and unlinking`)
+        //Delete the path from the database
+        await Database.deletePath(pathObj.id)
+        //Unlink the file
+        fs.unlinkSync(pathObj.path)
+    }
+
+}
+
+
+
+
 app.use(raw())
 
 await createRouter(app, {
     additionalMethods: [ "ws" ]
 })
+
+
+
 
 app.use((req:Request, res:Response) => {
     //req.log.info(req.url)
