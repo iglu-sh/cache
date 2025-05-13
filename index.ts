@@ -34,7 +34,7 @@ await Database.getAllCaches().then(async (caches:Array<cache>)=>{
         console.log('No caches found, creating default cache')
         await Database.createCache("default", "Read", true, "none", "XZ", "http://localhost:3000")
     }
-
+    caches = await Database.getAllCaches()
     for (const cache of caches) {
         if(cache.allowedKeys.length === 0){
             const cacheKey = makeApiKey(cache.name)
@@ -53,7 +53,6 @@ await Database.getAllCaches().then(async (caches:Array<cache>)=>{
 })
 
 //Check if there are "dangling" paths in the nar_file directory (i.e paths that are not in the database)
-
 const paths = await Database.getDirectAccess().query(`
     SELECT path, id FROM cache.hashes 
 `)
@@ -76,8 +75,22 @@ for(const pathObj of paths.rows){
     }
 
 }
-
-
+//Check if there are leftover parts in the nar_file directory
+for(const cache of await Database.getAllCaches()){
+    const cacheDir = `./nar_files/${cache.name}`
+    if(!fs.existsSync(cacheDir)){
+        console.log(`Cache directory ${cacheDir} to cleanup does not exist`)
+        continue
+    }
+    const files = fs.readdirSync(cacheDir)
+    for(const file of files){
+        //Check if the file is a file that ends with a number instead of .xz or .zstd
+        if(!file.endsWith('.xz') || !file.endsWith('.zstd')){
+            console.log(`Part file ${file} found, removing`)
+            fs.unlinkSync(`${cacheDir}/${file}`)
+        }
+    }
+}
 
 
 app.use(raw())
