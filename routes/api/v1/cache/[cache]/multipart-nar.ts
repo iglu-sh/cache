@@ -21,10 +21,20 @@ export const post = [
 
         const Database = new db();
         // Check if cache exists
-        if(req.params.cache === undefined || await Database.getCacheID(req.params.cache) === -1){
+        //@ts-ignore
+        const cacheID = await Database.getCacheID(req.params.cache)
+        if(req.params.cache === undefined || cacheID === -1){
             res.status(404).send('Cache Not Found');
             return;
         }
+        const cacheInfo = await Database.getCacheInfo(cacheID)
+        await Database.getCacheID(req.params.cache)
+        if(cacheInfo.publicSigningKeys.length === 0){
+            res.status(400).send(`There is no public signing key for this cache, add one by using cachix generate-keypair ${cacheInfo.name}`)
+            return;
+        }
+
+
         if(req.query.compression !== 'zst' && req.query.compression !== 'xz'){
             return res.status(400).json({
                 error: 'Invalid compression type, expected zstd or xz',
@@ -38,7 +48,7 @@ export const post = [
         //This is used to determine the compression type of the nar in the upload endpoint
         uid = chars.join('')
 
-        await Database.close();
+
         return res.status(200).json({
             "narId": uid,
             "uploadId": uid,

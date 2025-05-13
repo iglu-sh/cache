@@ -4,7 +4,7 @@
 import bodyParser from "express";
 import type { Request, Response, NextFunction } from "express";
 import fs from 'fs'
-import Database from "../../../../../../../utils/db.ts";
+import db from "../../../../../../../utils/db.ts";
 import {isAuthenticated} from "../../../../../../../utils/middlewares/auth.ts";
 export const post = [
     bodyParser.json(),
@@ -76,9 +76,27 @@ export const post = [
                 error: 'Invalid uid',
             })
         }
+        const Database = new db()
+        const cacheID = await Database.getCacheID(req.params.cache)
+        if (cacheID === -1) {
+            await Database.close()
+            return res.status(404).json({
+                error: "Cache not found",
+            });
+        }
+        const cacheInfo = await Database.getCacheInfo(cacheID)
         const compression = req.params.uid[0] === '0' ? 'xz' : 'zstd'
+        if(cacheInfo.publicSigningKeys.length === 0){
+            res.status(400).send(`There is no public signing key for this cache, add one by using cachix generate-keypair ${cacheInfo.name}`)
+            //Unlink all the parts files
+            for(const part of req.body.parts){
+                fs.unlinkSync(`./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${part.partNumber}`)
+            }
+            await Database.close()
+            return;
+        }
 
-        console.log(req.body)
+
         //Check if the request has a valid narInfoCreate object
         if(!req.body.narInfoCreate.cDeriver
             || !req.body.narInfoCreate.cFileHash
@@ -144,12 +162,11 @@ export const post = [
             fs.unlinkSync(partFilePath)
         }
 
-        //Construct the Database object
-        const db = new Database()
+
 
         //...and insert the narinfo into the database
         try{
-            await db.createStorePath(req.params.cache, req.body, req.params.uid)
+            await Database.createStorePath(req.params.cache, req.body, req.params.uid)
         }
         catch(e){
             console.error('Error inserting narInfo into database:', e)
@@ -157,7 +174,7 @@ export const post = [
                 error: 'Internal server error',
             })
         }
-        await db.close()
+        await Database.close()
 
 
 
