@@ -47,7 +47,7 @@ NarHash: ${storeNar[0].cnarhash}
 NarSize: ${storeNar[0].cnarsize}
 References: ${storeNar[0].creferences.join(" ")}
 Deriver: ${storeNar[0].cderiver}
-Sig: ${cache.name}:${cache.publicSigningKeys}
+Sig: ${cache.publicSigningKeys}
 `
 
         const headers = new Headers()
