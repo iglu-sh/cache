@@ -25,15 +25,17 @@ export const post = [
         const cacheID = await Database.getCacheID(req.params.cache)
         if(req.params.cache === undefined || cacheID === -1){
             res.status(404).send('Cache Not Found');
+            await Database.close()
             return;
         }
         const cacheInfo = await Database.getCacheInfo(cacheID)
         await Database.getCacheID(req.params.cache)
         if(cacheInfo.publicSigningKeys.length === 0){
+            await Database.close()
             res.status(400).send(`There is no public signing key for this cache, add one by using cachix generate-keypair ${cacheInfo.name}`)
             return;
         }
-
+        await Database.close()
 
         if(req.query.compression !== 'zst' && req.query.compression !== 'xz'){
             return res.status(400).json({
