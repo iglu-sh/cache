@@ -35,7 +35,7 @@ export const get = [
             return res.status(200).send(`
 StoreDir: /nix/store
 WantMassQuery: 1
-Priority: 40
+Priority: 1
 `)
         }
 

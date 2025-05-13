@@ -4,7 +4,7 @@ import fs from "fs";
 export const get = [
     bodyParser.json(),
     async (req: Request, res: Response, next: NextFunction) => {
-        console.log(req.url)
+        console.log('GET', req.url)
         if(req.method !== 'GET'){
             return res.status(405).json({
                 error: 'Method not allowed',
@@ -19,13 +19,12 @@ export const get = [
         const nixDerivationHash = req.params.derivation
         const cache = req.params.cache
         const Database = new db();
-        console.log(nixDerivationHash, req.url)
+        //console.log(nixDerivationHash, req.url)
         async function wrap(){
            const cacheID = await Database.getCacheID(cache)
             if(!cacheID){
                 return res.status(400).json({})
             }
-            console.log(nixDerivationHash)
             // Check if the cache is public or private
             const cacheInfo = await Database.getCacheInfo(cacheID)
             if(!cacheInfo){
