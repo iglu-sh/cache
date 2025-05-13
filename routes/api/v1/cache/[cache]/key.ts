@@ -35,6 +35,7 @@ export const post = [
         const cacheID = await Database.getCacheID(cacheName);
         if(cacheID === -1){
             res.status(404).send('Cache Not Found');
+            await Database.close()
             return;
         }
         const publicKey = req.body.publicKey;

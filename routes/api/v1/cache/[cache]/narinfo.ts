@@ -24,6 +24,7 @@ export const post = [
         // Check if cache exists
         if(req.params.cache === undefined || await Database.getCacheID(req.params.cache) === -1){
             res.status(404).send('Cache Not Found');
+            await Database.close()
             return;
         }
 
@@ -36,6 +37,7 @@ export const post = [
 
         if(!Array.isArray(req.body) || req.body.map((x: any)=> typeof x === 'string').includes(false)){
             res.status(400).send('Invalid Body');
+            await Database.close()
             return;
         }
 

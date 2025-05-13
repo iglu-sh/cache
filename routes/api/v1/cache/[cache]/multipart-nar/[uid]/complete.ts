@@ -77,107 +77,120 @@ export const post = [
             })
         }
         const Database = new db()
-        const cacheID = await Database.getCacheID(req.params.cache)
-        if (cacheID === -1) {
-            await Database.close()
-            return res.status(404).json({
-                error: "Cache not found",
-            });
-        }
-        const cacheInfo = await Database.getCacheInfo(cacheID)
-        const compression = req.params.uid[0] === '0' ? 'xz' : 'zstd'
-        if(cacheInfo.publicSigningKeys.length === 0){
-            res.status(400).send(`There is no public signing key for this cache, add one by using cachix generate-keypair ${cacheInfo.name}`)
-            //Unlink all the parts files
-            for(const part of req.body.parts){
-                fs.unlinkSync(`./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${part.partNumber}`)
+
+        async function wrap() {
+
+            //@ts-ignore
+            const cacheID = await Database.getCacheID(req.params.cache)
+            if (cacheID === -1) {
+                await Database.close()
+                return res.status(404).json({
+                    error: "Cache not found",
+                });
             }
-            await Database.close()
-            return;
-        }
+            const cacheInfo = await Database.getCacheInfo(cacheID)
+            //@ts-ignore
+            const compression = req.params.uid[0] === '0' ? 'xz' : 'zstd'
+            if (cacheInfo.publicSigningKeys.length === 0) {
+                res.status(400).send(`There is no public signing key for this cache, add one by using cachix generate-keypair ${cacheInfo.name}`)
+                //Unlink all the parts files
+                for (const part of req.body.parts) {
+                    fs.unlinkSync(`./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${part.partNumber}`)
+                }
+                await Database.close()
+                return;
+            }
 
 
-        //Check if the request has a valid narInfoCreate object
-        if(!req.body.narInfoCreate.cDeriver
-            || !req.body.narInfoCreate.cFileHash
-            || !req.body.narInfoCreate.cFileSize
-            || !req.body.narInfoCreate.cNarHash
-            || !req.body.narInfoCreate.cNarSize
-            || !req.body.narInfoCreate.cReferences
-            || !req.body.narInfoCreate.cStoreHash
-            || !req.body.narInfoCreate.cStoreSuffix
-        ){
-            console.error('Invalid narInfoCreate object')
-            return res.status(400).json({
-                error: 'Invalid narInfoCreate object',
-            })
-        }
-
-        //Check if the request has a valid parts array
-        if(!Array.isArray(req.body.parts)){
-            console.error('Invalid parts array')
-            return res.status(400).json({
-                error: 'Invalid parts array',
-            })
-        }
-        //Now try to combine the parts of the upload into a single archive file
-        //Check if the request has a valid parts array
-        if(!Array.isArray(req.body.parts)){
-            console.error('Invalid parts array')
-            return res.status(400).json({
-                error: 'Invalid parts array',
-            })
-        }
-
-        //Loop over the parts array and combine the file
-        for(const part of req.body.parts){
-            //Check if the part has a valid eTag and partNumber
-            if(!part.eTag || !part.partNumber || typeof part.partNumber !== 'number'){
-                console.error('Invalid part object')
+            //Check if the request has a valid narInfoCreate object
+            if (!req.body.narInfoCreate.cDeriver
+                || !req.body.narInfoCreate.cFileHash
+                || !req.body.narInfoCreate.cFileSize
+                || !req.body.narInfoCreate.cNarHash
+                || !req.body.narInfoCreate.cNarSize
+                || !req.body.narInfoCreate.cReferences
+                || !req.body.narInfoCreate.cStoreHash
+                || !req.body.narInfoCreate.cStoreSuffix
+            ) {
+                console.error('Invalid narInfoCreate object')
                 return res.status(400).json({
-                    error: 'Invalid part object',
+                    error: 'Invalid narInfoCreate object',
                 })
             }
 
-            const partNumber = parseInt(part.partNumber)
-            if(!Number.isInteger(partNumber)){
-                console.error('Part number is not an integer')
+            //Check if the request has a valid parts array
+            if (!Array.isArray(req.body.parts)) {
+                console.error('Invalid parts array')
                 return res.status(400).json({
-                    error: 'Part number is not an integer',
+                    error: 'Invalid parts array',
+                })
+            }
+            //Now try to combine the parts of the upload into a single archive file
+            //Check if the request has a valid parts array
+            if (!Array.isArray(req.body.parts)) {
+                console.error('Invalid parts array')
+                return res.status(400).json({
+                    error: 'Invalid parts array',
                 })
             }
 
-            //Check if the part file exists
-            const partFilePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${part.partNumber}`
-            if(!fs.existsSync(partFilePath)){
-                console.error('Part file does not exist')
-                return res.status(400).json({
-                    error: 'Part file does not exist',
+            //Loop over the parts array and combine the file
+            for (const part of req.body.parts) {
+                //Check if the part has a valid eTag and partNumber
+                if (!part.eTag || !part.partNumber || typeof part.partNumber !== 'number') {
+                    console.error('Invalid part object')
+                    return res.status(400).json({
+                        error: 'Invalid part object',
+                    })
+                }
+
+                const partNumber = parseInt(part.partNumber)
+                if (!Number.isInteger(partNumber)) {
+                    console.error('Part number is not an integer')
+                    return res.status(400).json({
+                        error: 'Part number is not an integer',
+                    })
+                }
+
+                //Check if the part file exists
+                const partFilePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${part.partNumber}`
+                if (!fs.existsSync(partFilePath)) {
+                    console.error('Part file does not exist')
+                    return res.status(400).json({
+                        error: 'Part file does not exist',
+                    })
+                }
+                //Combine the part into the final file
+                const finalFilePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}`
+                fs.appendFileSync(finalFilePath, fs.readFileSync(partFilePath))
+                //Delete the part file
+                fs.unlinkSync(partFilePath)
+            }
+
+
+            //...and insert the narinfo into the database
+            try {
+                //@ts-ignore
+                await Database.createStorePath(req.params.cache, req.body, req.params.uid)
+            } catch (e) {
+                console.error('Error inserting narInfo into database:', e)
+                return res.status(500).json({
+                    error: 'Internal server error',
                 })
             }
-            //Combine the part into the final file
-            const finalFilePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}`
-            fs.appendFileSync(finalFilePath, fs.readFileSync(partFilePath))
-            //Delete the part file
-            fs.unlinkSync(partFilePath)
         }
+        await wrap().then(async()=>{
 
-
-
-        //...and insert the narinfo into the database
-        try{
-            await Database.createStorePath(req.params.cache, req.body, req.params.uid)
-        }
-        catch(e){
-            console.error('Error inserting narInfo into database:', e)
-            return res.status(500).json({
-                error: 'Internal server error',
+        })
+            .catch(e=>{
+                console.error('Error inserting narInfo into database:', e)
+                return res.status(500).json({
+                    error: 'Internal server error',
+                })
             })
-        }
-        await Database.close()
-
-
-
+            .finally(async ()=>{
+                await Database.close()
+            })
         return res.status(200).send();
     }
 ]

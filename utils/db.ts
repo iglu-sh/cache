@@ -152,7 +152,7 @@ export default class Database {
                 name: '',
                 permission: '',
                 preferredCompressionMethod: '',
-                publicSigningKeys: '',
+                publicSigningKeys: [''],
                 uri: ''
             }
         }

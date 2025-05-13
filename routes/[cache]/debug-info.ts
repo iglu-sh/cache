@@ -21,7 +21,8 @@ export const get = async (req: Request, res: Response) => {
                 error: "Cache not found",
             });
         }
-        const cache = await Database.getCacheInfo(cacheID);
+        let cache = await Database.getCacheInfo(cacheID);
+        cache.publicSigningKeys[0] = `${cache.name}:${cache.publicSigningKeys[0]}`
         await Database.close()
         if(!cache.isPublic){
             return res.status(400).json({

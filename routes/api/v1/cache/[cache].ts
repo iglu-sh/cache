@@ -30,6 +30,7 @@ export const get = [
             const cache = await Database.getCacheInfo(await Database.getCacheID(req.params.cache))
             if(cache.publicSigningKeys.length === 0){
                 res.status(400).send(`There is no public signing key for this cache, add one by using cachix generate-keypair ${cache.name}`)
+                return
             }
 
             return res.json(cache);
