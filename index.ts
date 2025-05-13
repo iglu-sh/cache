@@ -61,6 +61,7 @@ for(const pathObj of paths.rows){
         console.log(`Path ${pathObj.path} does not exist, removing from database`)
         //Delete the path from the database
         await Database.deletePath(pathObj.id)
+        continue
     }
 
     //Check how big the file is
@@ -85,7 +86,7 @@ for(const cache of await Database.getAllCaches()){
     const files = fs.readdirSync(cacheDir)
     for(const file of files){
         //Check if the file is a file that ends with a number instead of .xz or .zstd
-        if(!file.endsWith('.xz') || !file.endsWith('.zstd')){
+        if(!file.endsWith('.xz') && !file.endsWith('.zstd')){
             console.log(`Part file ${file} found, removing`)
             fs.unlinkSync(`${cacheDir}/${file}`)
         }

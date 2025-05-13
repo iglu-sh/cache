@@ -11,7 +11,6 @@ export const post = [
             return;
         }
         console.log(req.url)
-        console.log(req.headers)
         //Check if the user is authenticated
         const auth = await isAuthenticated(req, res, async () => {
             return true
