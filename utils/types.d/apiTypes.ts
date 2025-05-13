@@ -4,7 +4,7 @@ export type CacheInfo = {
     name: string;
     permission: string;
     preferredCompressionMethod: string;
-    publicSigningKeys: string;
+    publicSigningKeys: string[];
     uri: string;
 }
 

@@ -139,7 +139,7 @@ export default class Database {
                 name: caches.rows[0].name,
                 permission: caches.rows[0].permission,
                 preferredCompressionMethod: caches.rows[0].preferredcompressionmethod,
-                publicSigningKeys: caches.rows[0].publicsigningkeys,
+                publicSigningKeys: [caches.rows[0].publicsigningkeys],
                 uri: caches.rows[0].uri
             }
 
