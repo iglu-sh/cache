@@ -6,10 +6,10 @@ import type { Request, Response, NextFunction } from "express";
 import fs from 'fs'
 import db from "../../../../../../../utils/db.ts";
 import {isAuthenticated} from "../../../../../../../utils/middlewares/auth.ts";
+import getFileHash from "../../../../../../../utils/getFileHash.ts";
 export const post = [
     bodyParser.json(),
     async (req: Request, res: Response, next: NextFunction) => {
-
         if(req.method !== 'POST'){
             return res.status(405).json({
                 error: 'Method not allowed',
@@ -101,7 +101,6 @@ export const post = [
                 return;
             }
 
-
             //Check if the request has a valid narInfoCreate object
             if (!req.body.narInfoCreate.cDeriver
                 || !req.body.narInfoCreate.cFileHash
@@ -155,7 +154,7 @@ export const post = [
                 //Check if the part file exists
                 const partFilePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${part.partNumber}`
                 if (!fs.existsSync(partFilePath)) {
-                    console.error('Part file does not exist')
+                    console.error(`Part file ${partFilePath} does not exist`)
                     return res.status(400).json({
                         error: 'Part file does not exist',
                     })
@@ -167,11 +166,31 @@ export const post = [
                 fs.unlinkSync(partFilePath)
             }
 
+            try{
+                //Verify the hash of the final file
+                const finalFilePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}`
+                const fileHash = req.body.narInfoCreate.cFileHash;
+                const actualFileHash = await getFileHash(finalFilePath);
+                if (actualFileHash !== fileHash) {
+                    console.log(`File hash: ${actualFileHash}, expected: ${fileHash}`)
+                    console.error('File hash does not match')
+                    return res.status(400).json({
+                        error: 'File hash does not match',
+                    })
+                }
+            }
+            catch(e){
+                console.error('Error getting file hash:', e)
+                await Database.close()
+                return res.status(500).json({
+                    error: 'Internal server error',
+                })
+            }
 
             //...and insert the narinfo into the database
             try {
                 //@ts-ignore
-                await Database.createStorePath(req.params.cache, req.body, req.params.uid)
+                await Database.createStorePath(req.params.cache, req.body, req.params.uid, compression)
             } catch (e) {
                 console.error('Error inserting narInfo into database:', e)
                 return res.status(500).json({

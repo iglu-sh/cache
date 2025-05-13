@@ -26,5 +26,6 @@ export type storeNarInfo = {
     cnarsize: number,
     creferences: Array<string>,
     csig: string,
-    parts: Array<partsInfo>
+    parts: Array<partsInfo>,
+    compression: 'xz' | 'zstd',
 }

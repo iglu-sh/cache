@@ -57,7 +57,8 @@ export default class Database {
                     cSig TEXT,
                     cStoreHash TEXT NOT NULL,
                     cStoreSuffix TEXT NOT NULL,
-                    parts JSONB[] NOT NULL
+                    parts JSONB[] NOT NULL,
+                    compression TEXT NOT NULL
                 );
             `)
         }
@@ -76,7 +77,7 @@ export default class Database {
         }
     }
 
-    public async createStorePath(cache:string, narReturn:narUploadSuccessRequestBody, uid:string):Promise<void>{
+    public async createStorePath(cache:string, narReturn:narUploadSuccessRequestBody, uid:string, compression: "xz" | 'zstd'):Promise<void>{
         //Check if the cache exists (just to be sure)
         const cacheID = await this.getCacheID(cache)
         if(cacheID === -1){
@@ -86,12 +87,12 @@ export default class Database {
 
         await this.db.query(`
             INSERT INTO cache.hashes 
-                (path, cache, cderiver, cfilehash, cfilesize, cnarhash, cnarsize, creferences, csig, cstorehash, cstoresuffix, parts)
+                (path, cache, cderiver, cfilehash, cfilesize, cnarhash, cnarsize, creferences, csig, cstorehash, cstoresuffix, parts, compression)
             VALUES 
-                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         `,
             [
-                `./nar_files/${cache}/${uid}.nar.xz`,
+                `./nar_files/${cache}/${uid}.nar.${compression}`,
                 await this.getCacheID(cache),
                 narReturn.narInfoCreate.cDeriver,
                 narReturn.narInfoCreate.cFileHash,
@@ -102,7 +103,8 @@ export default class Database {
                 narReturn.narInfoCreate.cSig,
                 narReturn.narInfoCreate.cStoreHash,
                 narReturn.narInfoCreate.cStoreSuffix,
-                narReturn.parts.map((part)=>{return JSON.stringify(part)}).map((part)=>{return JSON.parse(part)}) //Convert the parts to JSONB
+                narReturn.parts.map((part)=>{return JSON.stringify(part)}).map((part)=>{return JSON.parse(part)}), //Convert the parts to JSONB
+                compression
             ]
         )
     }
@@ -229,7 +231,8 @@ export default class Database {
                 cstorehash: row.cstorehash,
                 cstoresuffix: row.cstoresuffix,
                 parts: row.parts,
-                path: row.path
+                path: row.path,
+                compression: row.compression,
             } as storeNarInfo
         })
     }
