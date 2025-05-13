@@ -16,10 +16,10 @@ export const post = [
         if(!auth){
             return;
         }
-
+        console.log(req.body, req.headers)
         return res.status(200).json({
             //@ts-ignore
-            uploadUrl: `http://127.0.0.1:3000/upload/${req.params.cache}/${req.params.uid}?md5=${req.body.contentMD5}&token=${req.headers.authorization.split(" ")[1]}`,
+            uploadUrl: `http://127.0.0.1:3000/upload/${req.params.cache}/${req.params.uid}?md5=${req.body.contentMD5}&token=${req.headers.authorization.split(" ")[1]}&part=${req.query.partNumber}`,
         })
     }
 ]

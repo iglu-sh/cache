@@ -33,9 +33,8 @@ export const get = async (req: Request, res: Response, next: NextFunction) => {
 
         //Check if the requested hash is in this cache
         const storeNar = await Database.getStoreNarInfo(cacheID, req.params.hash as string);
-        console.log(storeNar)
         if(storeNar.length === 0 || !storeNar[0]){
-            console.log(`Store nar ${req.params.hash} not found`)
+            console.log(`Store nar ${req.params.hash} not cached`)
             return res.status(404).json()
         }
         //Build the nar info and send it to the client
@@ -48,8 +47,9 @@ NarHash: ${storeNar[0].cnarhash}
 NarSize: ${storeNar[0].cnarsize}
 References: ${storeNar[0].creferences.join(" ")}
 Deriver: ${storeNar[0].cderiver}
-Sig: ${cache.name}:${cache.publicSigningKeys[0]}
+Sig: ${cache.name}:${cache.publicSigningKeys}
 `
+
         const headers = new Headers()
         headers.append("content-type", "text/x-nix-narinfo")
         res.setHeaders(headers)

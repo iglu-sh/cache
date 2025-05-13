@@ -32,7 +32,7 @@ export default class Database {
                         name TEXT,
                         permission TEXT,
                         preferredCompressionMethod TEXT,
-                        publicSigningKeys TEXT[],
+                        publicSigningKeys TEXT,
                         allowedKeys TEXT[],
                         uri TEXT
                     )
@@ -152,7 +152,7 @@ export default class Database {
                 name: '',
                 permission: '',
                 preferredCompressionMethod: '',
-                publicSigningKeys: [],
+                publicSigningKeys: '',
                 uri: ''
             }
         }
@@ -246,7 +246,7 @@ export default class Database {
         await this.db.query(`
             INSERT INTO cache.caches (name, permission, isPublic, githubUsername, preferredCompressionMethod, uri, publicSigningKeys, allowedKeys) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `, [name, permission, isPublic, githubUsername, preferredCompressionMethod, uri, [], []])
+        `, [name, permission, isPublic, githubUsername, preferredCompressionMethod, uri, '', []])
     }
 
     public getDirectAccess():Client{
@@ -259,7 +259,7 @@ export default class Database {
 
     public async appendPublicKey(id:number, key:string):Promise<void>{
         await this.db.query(
-            'UPDATE cache.caches SET publicSigningKeys = array_append(publicSigningKeys, $1) WHERE id = $2',
+            "UPDATE cache.caches SET publicSigningKeys = $1 WHERE id = $2",
             [key, id]
         )
     }

@@ -26,9 +26,19 @@ export const post = [
             res.status(404).send('Cache Not Found');
             return;
         }
-
+        if(req.query.compression !== 'zst' && req.query.compression !== 'xz'){
+            return res.status(400).json({
+                error: 'Invalid compression type, expected zstd or xz',
+            })
+        }
         //Get a random uuid for relating the store hash to the upload
-        const uid = randomUUID()
+        let uid:string = randomUUID()
+        let chars = [...uid]
+        chars[0] = req.query.compression === 'xz' ? '0' : '1'
+        //We set the first char of the uid to 0 if the compression is xz and to one if it is zstd
+        //This is used to determine the compression type of the nar in the upload endpoint
+        uid = chars.join('')
+
         await Database.close();
         return res.status(200).json({
             "narId": uid,

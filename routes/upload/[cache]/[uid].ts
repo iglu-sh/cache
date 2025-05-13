@@ -11,7 +11,6 @@ export const put = async (req:Request, res:Response)=>{
             error: 'Method not allowed',
         })
     }
-
     //Check if the user is authenticated
     const auth = await isAuthenticated(req, res, async () => {
         return true
@@ -34,12 +33,26 @@ export const put = async (req:Request, res:Response)=>{
             error: 'Missing md5 hash',
         })
     }
-
+    if(!req.query.part){
+        console.error('Missing part number')
+        return res.status(400).json({
+            error: 'Missing part number',
+        })
+    }
     //Create the directory if it does not exist
     if(!fs.existsSync(`./nar_files/${req.params.cache}`)){
         fs.mkdirSync(`./nar_files/${req.params.cache}`, {recursive: true})
     }
-    const filePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.xz`
+
+    //Check the compression of the nar
+    if(!req.params.uid || req.params.uid[0] !== '0' && req.params.uid[0] !== '1'){
+        console.error('Invalid uid, expected 0 or 1 as first character')
+        return res.status(400).json({
+            error: 'Invalid uid',
+        })
+    }
+    const compression = req.params.uid[0] === '0' ? 'xz' : 'zstd'
+    const filePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${req.query.part}`
     //Create a write stream to the nar file
     const writeStream = fs.createWriteStream(filePath)
 

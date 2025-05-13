@@ -69,6 +69,15 @@ export const post = [
                 error: 'Cache does not exist',
             })
         }
+        //Get the compression from the uid
+        if(!req.params.uid || req.params.uid[0] !== '0' && req.params.uid[0] !== '1'){
+            console.error('Invalid uid, expected 0 or 1 as first character')
+            return res.status(400).json({
+                error: 'Invalid uid',
+            })
+        }
+        const compression = req.params.uid[0] === '0' ? 'xz' : 'zstd'
+
         console.log(req.body)
         //Check if the request has a valid narInfoCreate object
         if(!req.body.narInfoCreate.cDeriver
@@ -93,6 +102,47 @@ export const post = [
                 error: 'Invalid parts array',
             })
         }
+        //Now try to combine the parts of the upload into a single archive file
+        //Check if the request has a valid parts array
+        if(!Array.isArray(req.body.parts)){
+            console.error('Invalid parts array')
+            return res.status(400).json({
+                error: 'Invalid parts array',
+            })
+        }
+
+        //Loop over the parts array and combine the file
+        for(const part of req.body.parts){
+            //Check if the part has a valid eTag and partNumber
+            if(!part.eTag || !part.partNumber || typeof part.partNumber !== 'number'){
+                console.error('Invalid part object')
+                return res.status(400).json({
+                    error: 'Invalid part object',
+                })
+            }
+
+            const partNumber = parseInt(part.partNumber)
+            if(!Number.isInteger(partNumber)){
+                console.error('Part number is not an integer')
+                return res.status(400).json({
+                    error: 'Part number is not an integer',
+                })
+            }
+
+            //Check if the part file exists
+            const partFilePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${part.partNumber}`
+            if(!fs.existsSync(partFilePath)){
+                console.error('Part file does not exist')
+                return res.status(400).json({
+                    error: 'Part file does not exist',
+                })
+            }
+            //Combine the part into the final file
+            const finalFilePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}`
+            fs.appendFileSync(finalFilePath, fs.readFileSync(partFilePath))
+            //Delete the part file
+            fs.unlinkSync(partFilePath)
+        }
 
         //Construct the Database object
         const db = new Database()
@@ -108,6 +158,9 @@ export const post = [
             })
         }
         await db.close()
+
+
+
         return res.status(200).send();
     }
 ]
