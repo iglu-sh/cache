@@ -37,7 +37,7 @@ await Database.getAllCaches().then(async (caches:Array<cache>)=>{
     if(caches.length === 0){
         //Create a default cache
         console.log('No caches found, creating default cache')
-        await Database.createCache("default", "Read", true, "none", "XZ", `http://${process.env.CACHE_ROOT_DOMAIN}`)
+        await Database.createCache("default", "Read", true, "none", "XZ", `${process.env.CACHE_ROOT_DOMAIN}`)
     }
     caches = await Database.getAllCaches()
     for (const cache of caches) {
