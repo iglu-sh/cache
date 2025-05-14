@@ -10,14 +10,16 @@ services:
       - "5432:5432"
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
-#  cache:
-#    build:
-#     context: .
-#      dockerfile: Dockerfile
-#    environment:
-#      - CACHE_ROOT_DOMAIN=http://localhost:3000
-#      - POSTGRES_CONNECTION_STRING=postgresql://postgres:postgres@postgres:5432/cache
-#      - CACHE_FILESYSTEM_DIR=/tmp/cache
-#      - CACHE_JWT_SECRET=verysecret
-#    volumes:
-#      - ./cache/nar_files:/cache/nar_files
+  cache:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - CACHE_ROOT_DOMAIN=http://localhost:3000
+      - POSTGRES_CONNECTION_STRING=postgresql://postgres:postgres@postgres:5432/cache
+      - CACHE_FILESYSTEM_DIR=/tmp/cache #Should be mounted to an outside container if you want to persist files, else set to something in the container
+      - CACHE_JWT_SECRET=verysecret
+    volumes:
+      - ./cache/nar_files:/tmp/cache
+    ports:
+        - "3000:3000"
