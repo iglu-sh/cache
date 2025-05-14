@@ -3,11 +3,7 @@ import type {cache, storeNarInfo} from "./types.d/dbTypes.ts";
 import type {CacheInfo, narUploadSuccessRequestBody} from "./types.d/apiTypes.ts";
 export default class Database {
     private db:Client = new Client({
-        user: "postgres",
-        password: "postgres",
-        host: "localhost",
-        port: 5432,
-        database: "cache",
+        connectionString: process.env.POSTGRES_CONNECTION_STRING,
     })
 
     constructor(){
@@ -20,10 +16,18 @@ export default class Database {
 
         //Try to create the cache and store hash table
         try{
-            this.db.query(`
+        }
+        catch(e){
+            console.error('Error whilst creating tables:', e)
+        }
+    }
+
+    public async setupDB():Promise<void>{
+
+        await this.db.query(`
                 CREATE SCHEMA IF NOT EXISTS cache
             `)
-            this.db.query(`
+        await this.db.query(`
                 CREATE TABLE IF NOT EXISTS cache.caches 
                     (
                         id SERIAL PRIMARY KEY,
@@ -34,11 +38,12 @@ export default class Database {
                         preferredCompressionMethod TEXT,
                         publicSigningKeys TEXT,
                         allowedKeys TEXT[],
-                        uri TEXT
+                        uri TEXT,
+                        priority INTEGER DEFAULT 40
                     )
             `)
 
-            this.db.query(`
+        await this.db.query(`
                 create table IF NOT EXISTS cache.hashes(
                     id      SERIAL                    not null
                         constraint hashes_pk
@@ -61,11 +66,8 @@ export default class Database {
                     compression TEXT NOT NULL
                 );
             `)
-        }
-        catch(e){
-            console.error('Error whilst creating tables:', e)
-        }
     }
+
     public async getCaches():Promise<Array<cache>> {
         try{
             const caches = await this.db.query('SELECT * FROM cache.caches')
@@ -92,7 +94,7 @@ export default class Database {
                 ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         `,
             [
-                `./nar_files/${cache}/${uid}.nar.${compression}`,
+                `${process.env.CACHE_FILESYSTEM_DIR}/nar_files/${cache}/${uid}.nar.${compression}`,
                 await this.getCacheID(cache),
                 narReturn.narInfoCreate.cDeriver,
                 narReturn.narInfoCreate.cFileHash,
@@ -142,7 +144,8 @@ export default class Database {
                 permission: caches.rows[0].permission,
                 preferredCompressionMethod: caches.rows[0].preferredcompressionmethod,
                 publicSigningKeys: [caches.rows[0].publicsigningkeys],
-                uri: caches.rows[0].uri
+                uri: caches.rows[0].uri,
+
             }
 
         }

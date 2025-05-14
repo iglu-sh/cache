@@ -16,6 +16,7 @@ export const post = [
                 error: 'Missing cache name',
             })
         }
+        console.log(req.body, req.headers.authorization)
         //Check if the request is authenticated
         const auth = await isAuthenticated(req, res, next)
         if(!auth){
