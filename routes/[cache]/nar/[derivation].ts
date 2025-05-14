@@ -52,7 +52,7 @@ export const get = [
                     error: 'Derivation not found',
                 })
             }
-            res.status(200).sendFile(`${Bun.main.replace('/index.ts', '')}/${filePath.replace('./','')}`, (err)=>{
+            res.status(200).sendFile(filePath, (err)=>{
                 if(err){
                     console.error(err)
                     return res.status(500).json({

@@ -17,7 +17,7 @@ export async function isAuthenticated (req: any, res: any, next: any):Promise<bo
         // Check if the token is valid
         let decoded:any
         try{
-            decoded = jwt.verify(token, 'verysecretencryptionkey');
+            decoded = jwt.verify(token, process.env.CACHE_JWT_SECRET as string);
         }
         catch(e){
             //Return a 403 error if the token is invalid

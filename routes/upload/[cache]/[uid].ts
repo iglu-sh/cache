@@ -40,8 +40,8 @@ export const put = async (req:Request, res:Response)=>{
         })
     }
     //Create the directory if it does not exist
-    if(!fs.existsSync(`./nar_files/${req.params.cache}`)){
-        fs.mkdirSync(`./nar_files/${req.params.cache}`, {recursive: true})
+    if(!fs.existsSync(`${process.env.CACHE_FILESYSTEM_DIR}/nar_files/${req.params.cache}`)){
+        fs.mkdirSync(`${process.env.CACHE_FILESYSTEM_DIR}/nar_files/${req.params.cache}`, {recursive: true})
     }
 
     //Check the compression of the nar
@@ -52,7 +52,7 @@ export const put = async (req:Request, res:Response)=>{
         })
     }
     const compression = req.params.uid[0] === '0' ? 'xz' : 'zstd'
-    const filePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${req.query.part}`
+    const filePath = `${process.env.CACHE_FILESYSTEM_DIR}/nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${req.query.part}`
     //Create a write stream to the nar file
     const writeStream = fs.createWriteStream(filePath)
 
