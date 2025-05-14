@@ -63,7 +63,7 @@ export const post = [
         }
 
         //Check if the request uid has an associated cache object in the filesystem
-        if(!fs.existsSync(`./nar_files/${req.params.cache}`)){
+        if(!fs.existsSync(`${process.env.CACHE_FILESYSTEM_DIR}/nar_files/${req.params.cache}`)){
             console.error('Cache does not exist')
             return res.status(400).json({
                 error: 'Cache does not exist',
@@ -95,7 +95,7 @@ export const post = [
                 res.status(400).send(`There is no public signing key for this cache, add one by using cachix generate-keypair ${cacheInfo.name}`)
                 //Unlink all the parts files
                 for (const part of req.body.parts) {
-                    fs.unlinkSync(`./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${part.partNumber}`)
+                    fs.unlinkSync(`${process.env.CACHE_FILESYSTEM_DIR}/nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${part.partNumber}`)
                 }
                 await Database.close()
                 return;
@@ -152,7 +152,7 @@ export const post = [
                 }
 
                 //Check if the part file exists
-                const partFilePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${part.partNumber}`
+                const partFilePath = `${process.env.CACHE_FILESYSTEM_DIR}/nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}.${part.partNumber}`
                 if (!fs.existsSync(partFilePath)) {
                     console.error(`Part file ${partFilePath} does not exist`)
                     return res.status(400).json({
@@ -160,7 +160,7 @@ export const post = [
                     })
                 }
                 //Combine the part into the final file
-                const finalFilePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}`
+                const finalFilePath = `${process.env.CACHE_FILESYSTEM_DIR}/nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}`
                 fs.appendFileSync(finalFilePath, fs.readFileSync(partFilePath))
                 //Delete the part file
                 fs.unlinkSync(partFilePath)
@@ -168,7 +168,7 @@ export const post = [
 
             try{
                 //Verify the hash of the final file
-                const finalFilePath = `./nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}`
+                const finalFilePath = `${process.env.CACHE_FILESYSTEM_DIR}/nar_files/${req.params.cache}/${req.params.uid}.nar.${compression}`
                 const fileHash = req.body.narInfoCreate.cFileHash;
                 const actualFileHash = await getFileHash(finalFilePath);
                 if (actualFileHash !== fileHash) {

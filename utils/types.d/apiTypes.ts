@@ -6,6 +6,7 @@ export type CacheInfo = {
     preferredCompressionMethod: string;
     publicSigningKeys: string[];
     uri: string;
+    priority: number;
 }
 
 export type narInfoCreate = {

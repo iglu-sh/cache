@@ -6,33 +6,38 @@ import db from "./utils/db";
 import createRouter, {router} from "express-file-routing"
 import type {cache} from "./utils/types.d/dbTypes.ts";
 import {makeApiKey} from "./utils/apiKeys.ts";
+import 'dotenv/config'
 const app = require('express')()
 const pino = require('pino-http')()
-
-
-let parseJson = bodyParser.json()
-
-type configObject = {
-    "server" : {
-        "database" : {
-            "dbHost":string,
-            "dbPort":number,
-            "dbUser":string,
-            "dbPassword":string,
-        }
-        key: string,
-        retention: 4
-    }
+//Check if the environment variables are set
+if(!process.env.CACHE_ROOT_DOMAIN){
+    //Show an error message as we cannot create a cache without a root domain
+    console.error('No CACHE_ROOT_DOMAIN set, please set it in the .env file or your environment')
+    process.exit(1)
+}
+if(!process.env.POSTGRES_CONNECTION_STRING){
+   //Show an error message as we cannot connect to the database
+    console.error('No POSTGRES_CONNECTION_STRING set, please set it in the .env file or your environment')
+    process.exit(1)
+}
+if(!process.env.CACHE_FILESYSTEM_DIR){
+    //We need a directory to store the files in
+    console.error('No CACHE_FILESYSTEM_DIR set, please set it in the .env file or your environment')
+    process.exit(1)
+}
+if(!process.env.CACHE_JWT_SECRET){
+    //A secret must be provided to sign the jwt tokens
+    console.error('No CACHE_JWT_SECRET set, please set it in the .env file or your environment')
+    process.exit(1)
 }
 
-//app.use(pino)
-// Middleware to handle all routes
 const Database = new db();
+await Database.setupDB();
 await Database.getAllCaches().then(async (caches:Array<cache>)=>{
     if(caches.length === 0){
         //Create a default cache
         console.log('No caches found, creating default cache')
-        await Database.createCache("default", "Read", true, "none", "XZ", "http://localhost:3000")
+        await Database.createCache("default", "Read", true, "none", "XZ", `${process.env.CACHE_ROOT_DOMAIN}`)
     }
     caches = await Database.getAllCaches()
     for (const cache of caches) {
@@ -52,7 +57,7 @@ await Database.getAllCaches().then(async (caches:Array<cache>)=>{
     }
 })
 
-//Check if there are "dangling" paths in the nar_file directory (i.e paths that are not in the database)
+//Check if there are "dangling" paths in the nar_file directory (i.e paths that are not in the database) and part files
 const paths = await Database.getDirectAccess().query(`
     SELECT path, id FROM cache.hashes 
 `)
@@ -78,9 +83,8 @@ for(const pathObj of paths.rows){
 }
 //Check if there are leftover parts in the nar_file directory
 for(const cache of await Database.getAllCaches()){
-    const cacheDir = `./nar_files/${cache.name}`
+    const cacheDir = `${process.env.CACHE_FILESYSTEM_DIR}/nar_files/${cache.name}`
     if(!fs.existsSync(cacheDir)){
-        console.log(`Cache directory ${cacheDir} to cleanup does not exist`)
         continue
     }
     const files = fs.readdirSync(cacheDir)

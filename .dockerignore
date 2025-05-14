@@ -1,4 +1,4 @@
-result
-.env
 nar_files
+postgres_data
 node_modules
+.env
