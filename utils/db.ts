@@ -145,7 +145,7 @@ export default class Database {
                 preferredCompressionMethod: caches.rows[0].preferredcompressionmethod,
                 publicSigningKeys: [caches.rows[0].publicsigningkeys],
                 uri: caches.rows[0].uri,
-
+                priority: caches.rows[0].priority,
             }
 
         }
@@ -158,7 +158,8 @@ export default class Database {
                 permission: '',
                 preferredCompressionMethod: '',
                 publicSigningKeys: [''],
-                uri: ''
+                uri: '',
+                priority: 40,
             }
         }
     }
@@ -204,7 +205,8 @@ export default class Database {
             preferredCompressionMethod: row.preferredcompressionmethod,
             publicSigningKeys: row.publicsigningkeys,
             allowedKeys: row.allowedkeys,
-            uri: row.uri
+            uri: row.uri,
+            priority: row.priority
         }})
     }
     public async getAllowedKeys(cache:number):Promise<Array<string>> {

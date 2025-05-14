@@ -10,6 +10,7 @@ export type cache = {
     publicSigningKeys: Array<string>;
     allowedKeys: Array<string>;
     uri: string;
+    priority: number;
 }
 
 export type storeNarInfo = {
