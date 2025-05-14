@@ -1,27 +1,44 @@
 {
   description = "A very basic flake";
-  nixConfig = {
-  	trusted-users = ["boerg" "root"];
-	extra-substituters = [
-		"http://localhost:3000/boerg"
-	];
-	extra-trusted-public-keys = ["boerg:boerg-inc"];
-  };
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    utils.url = "github:gytis-ivaskevicius/flake-utils-plus?ref=afcb15b845e74ac5e998358709b2b5fe42a948d1";
   };
 
-  outputs = { self, nixpkgs }@inputs:
-    let
-        inherit inputs;
-        inherit (nixpkgs) lib;
-        pkgsDarwin = import nixpkgs {system = "aarch64-darwin";};
-    in
-    {
-        devShells.aarch64-darwin.default = pkgsDarwin.mkShell {
-            packages = with pkgsDarwin; [
-                wget
-            ];
+  outputs = inputs@{ self, nixpkgs, utils }:
+    utils.lib.mkFlake {
+      inherit self inputs;
+
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
+      ];
+
+      overlay = final: prev: {
+        iglu-cache = prev.callPackage ./nix/package {};
+      };
+
+      sharedOverlays = [
+        self.overlay
+      ];
+
+      outputsBuilder = channels:
+      let
+        inherit (channels) nixpkgs;
+      in
+      {
+        devShell = nixpkgs.mkShell {
+          packages = with nixpkgs; [
+            wget
+            cachix
+            bun
+          ];
+          shellHook = ''
+            exec zsh
+          '';
         };
+        packages = nixpkgs;
+      };
     };
 }
