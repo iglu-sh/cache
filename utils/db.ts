@@ -3,17 +3,15 @@ import type {cache, storeNarInfo} from "./types.d/dbTypes.ts";
 import type {CacheInfo, narUploadSuccessRequestBody} from "./types.d/apiTypes.ts";
 export default class Database {
     
-    private db:Client
+    private db:Client = new Client({
+      user: process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD,
+      host: process.env.POSTGRES_HOST,
+      port: process.env.POSTGRES_PORT,
+      database: process.env.POSTGRES_DB,
+    })
     
-    constructor(host:string, port:number, user:string, password:string, database:string, skipConnection:boolean = false){
-        this.db = new Client({
-          user: user,
-          password: password,
-          host: host,
-          port: port,
-          database: database,
-        })
-
+    constructor(skipConnection:boolean = false){
         if(!skipConnection){
             this.db.connect()
         }
