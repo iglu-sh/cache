@@ -15,6 +15,7 @@ export const post = [
                 error: 'Method not allowed',
             })
         }
+
         //Check if the user is authenticated
         const auth = await isAuthenticated(req, res, async () => {
             return true
@@ -22,7 +23,8 @@ export const post = [
         if(!auth){
             return;
         }
-
+        console.log('POST', req.url)
+        console.log('Request body:', req.body)
         //Check if the request is an application/json request
         if(!req.headers['content-type']?.startsWith('application/json')){
             return res.status(400).json({
