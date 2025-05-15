@@ -6,7 +6,7 @@
 
 dockerTools.buildImage {
   name = "iglu-cache-docker";
-  tag = "latest";
+  tag = "v${iglu-cache.version}";
 
   copyToRoot = [
     iglu-cache
