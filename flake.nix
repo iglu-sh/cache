@@ -15,9 +15,7 @@
         "aarch64-darwin"
       ];
 
-      overlay = final: prev: {
-        iglu-cache = prev.callPackage ./nix/package {};
-      };
+      overlay = import ./nix/package;
 
       sharedOverlays = [
         self.overlay
