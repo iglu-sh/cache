@@ -30,6 +30,22 @@ if(!process.env.CACHE_JWT_SECRET){
     console.error('No CACHE_JWT_SECRET set, please set it in the .env file or your environment')
     process.exit(1)
 }
+// Print config
+const split = process.env.POSTGRES_CONNECTION_STRING.split(":")
+const split2 = split[2].split("@")
+const split3 = split[3].split("/")
+
+let db_port = split3[0]
+let db_host = split2[1]
+let db_user = split[1]?.replaceAll("/", "")
+let db_db = split3[1]
+
+console.log("----------CONFIG----------")
+console.log("Database Host:\t" + db_host)
+console.log("Database Port:\t" + db_port)
+console.log("Database User:\t" + db_user)
+console.log("Database DB:\t" + db_db)
+
 let Database = new db(true)
 let isReady = false
 while(!isReady){
