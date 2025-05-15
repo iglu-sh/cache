@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
     - uses: actions/checkout@v4
     - uses: gacts/install-podman@v1
@@ -28,9 +30,9 @@ jobs:
       with:
         image: iglu-cache-docker  
         tags: ${{ steps.build_image.outputs.version }} latest
-        registry: ghcr/iglu-api
+        registry: ghcr/${{ github.repository_owner }}
         username: ${{ github.actor }} 
-        password: ${{ GITHUB_TOKEN }}
+        password: ${{ github.token }}
         extra-args: |
           --disable-content-trust
 
