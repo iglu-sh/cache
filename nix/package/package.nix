@@ -82,26 +82,26 @@ stdenv.mkDerivation rec{
     cp -r $src/tsconfig.json $out/share/${pname}/
     cp -r $src/package.json $out/share/${pname}/
 
-    echo "
-    if [ -z "''${CACHE_ROOT_DOMAIN}" ]; then
+    echo ' 
+    if [ -z "$CACHE_ROOT_DOMAIN" ]; then
       export CACHE_ROOT_DOMAIN="http://localhost:3000"
     fi
 
-    if [ -z "''${POSTGRES_CONNECTION_STRING}" ]; then
+    if [ -z "$POSTGRES_CONNECTION_STRING" ]; then
       export POSTGRES_CONNECTION_STRING="postgresql://postgres:postgres@localhost:5432/cache"
     fi
     
-    if [ -z "''${CACHE_FILESYSTEM_DIR}" ]; then
+    if [ -z "$CACHE_FILESYSTEM_DIR" ]; then
       export CACHE_FILESYSTEM_DIR="/tmp/iglu-cache"
     fi
 
-    if [ -z "''${CACHE_JWT_SECRET}" ]; then
+    if [ -z "$CACHE_JWT_SECRET" ]; then
       export CACHE_JWT_SECRET="secret"
     fi
     
     cd $out/share/${pname}/
     bun run prod
-    " >> $out/bin/iglu-cache
+    ' >> $out/bin/iglu-cache
 
     chmod +x $out/bin/iglu-cache
 
