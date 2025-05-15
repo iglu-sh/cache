@@ -96,7 +96,11 @@ for(const pathObj of paths.rows){
     if(!fs.existsSync(pathObj.path)){
         console.log(`Path ${pathObj.path} does not exist, removing from database`)
         //Delete the path from the database
+        await Database.getDirectAccess().query(`
+            DELETE FROM cache.request WHERE hash = ${pathObj.id}
+        `)
         await Database.deletePath(pathObj.id)
+
         continue
     }
 
