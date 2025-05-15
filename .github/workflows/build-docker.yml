@@ -30,7 +30,7 @@ jobs:
         tags: ${{ steps.build_image.outputs.version }} latest
         registry: ghcr/iglu-api
         username: ${{ github.actor }} 
-        password: ${{ github.token }}
+        password: ${{ GITHUB_TOKEN }}
         extra-args: |
           --disable-content-trust
 
