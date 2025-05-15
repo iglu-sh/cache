@@ -62,8 +62,8 @@ stdenv.mkDerivation rec{
     cp -a ${nodeModules}/node_modules ./node_modules
     chmod -R u+rw node_modules
     chmod -R u+x node_modules/.bin
-    patchShebangs node_modules
-
+    patchShebangs node_modules iglu-cache.sh
+    
     export HOME=$TMPDIR
     export PATH="$PWD/node_modules/.bin:$PATH"
 
@@ -82,30 +82,12 @@ stdenv.mkDerivation rec{
     cp -r $src/tsconfig.json $out/share/${pname}/
     cp -r $src/package.json $out/share/${pname}/
 
-    echo ' 
-    if [ -z "$CACHE_ROOT_DOMAIN" ]; then
-      export CACHE_ROOT_DOMAIN="http://localhost:3000"
-    fi
-
-    if [ -z "$POSTGRES_CONNECTION_STRING" ]; then
-      export POSTGRES_CONNECTION_STRING="postgresql://postgres:postgres@localhost:5432/cache"
-    fi
-    
-    if [ -z "$CACHE_FILESYSTEM_DIR" ]; then
-      export CACHE_FILESYSTEM_DIR="/tmp/iglu-cache"
-    fi
-
-    if [ -z "$CACHE_JWT_SECRET" ]; then
-      export CACHE_JWT_SECRET="secret"
-    fi
-    
-    cd $out/share/${pname}/
-    bun run prod
-    ' >> $out/bin/iglu-cache
+    cp $src/iglu-cache.sh $out/bin/iglu-cache
 
     chmod +x $out/bin/iglu-cache
 
-
+    substituteInPlace $out/bin/iglu-cache \
+      --replace-fail 'CWD' $out/share/iglu-cache
 
     runHook postInstall
   '';
