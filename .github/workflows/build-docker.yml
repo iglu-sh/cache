@@ -1,0 +1,40 @@
+---
+name: "Build Image and upload to ghcr"
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+    - uses: actions/checkout@v4
+    - uses: gacts/install-podman@v1
+    - uses: cachix/install-nix-action@v31
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - name: Build container image
+      id: build_image
+      run: |
+        nix build .#iglu-cache-docker
+        podman load < result
+        echo "version=$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}')" >> $GITHUB_OUTPUT
+        podman image tag iglu-cache-docker:$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}') iglu-cache-docker:latest 
+    - name: Push To GHCR
+      uses: redhat-actions/push-to-registry@v2.8
+      with:
+        image: iglu-cache-docker  
+        tags: ${{ steps.build_image.outputs.version }} latest
+        registry: ghcr.io/${{ github.repository_owner }}
+        username: ${{ github.actor }} 
+        password: ${{ secrets.GITHUB_TOKEN }}
+        extra-args: |
+          --disable-content-trust
+
