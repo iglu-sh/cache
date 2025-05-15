@@ -2,9 +2,15 @@ import { Client } from 'pg';
 import type {cache, storeNarInfo} from "./types.d/dbTypes.ts";
 import type {CacheInfo, narUploadSuccessRequestBody} from "./types.d/apiTypes.ts";
 export default class Database {
+    
     private db:Client = new Client({
-        connectionString: process.env.POSTGRES_CONNECTION_STRING,
+      user: process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD,
+      host: process.env.POSTGRES_HOST,
+      port: process.env.POSTGRES_PORT,
+      database: process.env.POSTGRES_DB,
     })
+    
     constructor(skipConnection:boolean = false){
         if(!skipConnection){
             this.db.connect()
