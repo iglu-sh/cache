@@ -30,8 +30,20 @@ if(!process.env.CACHE_JWT_SECRET){
     console.error('No CACHE_JWT_SECRET set, please set it in the .env file or your environment')
     process.exit(1)
 }
-
-const Database = new db();
+let Database = new db(true)
+let isReady = false
+while(!isReady){
+    try {
+        Database = new db(true)
+        await Database.connect()
+        isReady = true
+    }
+    catch(e){
+        console.log('Error whilst connecting to Database, is your Server up? Waiting 5 Seconds to retry', e)
+        //Wait for 5 seconds
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+    }
+}
 await Database.setupDB();
 await Database.getAllCaches().then(async (caches:Array<cache>)=>{
     if(caches.length === 0){

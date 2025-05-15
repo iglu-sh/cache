@@ -5,25 +5,17 @@ export default class Database {
     private db:Client = new Client({
         connectionString: process.env.POSTGRES_CONNECTION_STRING,
     })
-
-    constructor(){
-        try{
+    constructor(skipConnection:boolean = false){
+        if(!skipConnection){
             this.db.connect()
         }
-        catch(e){
-            console.error('Error whilst opening database:', e)
-        }
-
-        //Try to create the cache and store hash table
-        try{
-        }
-        catch(e){
-            console.error('Error whilst creating tables:', e)
-        }
     }
-
+    public async connect(){
+        console.log(`Connecting to the database`)
+        await this.db.connect()
+        console.log(`Connected to the database`)
+    }
     public async setupDB():Promise<void>{
-
         await this.db.query(`
                 CREATE SCHEMA IF NOT EXISTS cache
             `)
