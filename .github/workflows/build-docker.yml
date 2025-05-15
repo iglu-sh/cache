@@ -26,7 +26,7 @@ jobs:
       run: |
         nix build .#iglu-cache-docker
         podman load < result
-        echo version=$(docker images | grep iglu-cache-docker | awk '{print $2}') >> "$GITHUB_OUTPUT"
+        echo "version=$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}')" >> $GITHUB_OUTPUT
         podman image tag iglu-cache-docker:$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}') iglu-cache-docker:latest 
     - name: Push To GHCR
       uses: redhat-actions/push-to-registry@v2.8
