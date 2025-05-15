@@ -45,6 +45,9 @@ console.log("Database Host:\t" + db_host)
 console.log("Database Port:\t" + db_port)
 console.log("Database User:\t" + db_user)
 console.log("Database DB:\t" + db_db)
+console.log("Root Domain:\t" + process.env.CACHE_ROOT_DOMAIN)
+console.log("Filesystem Dir:\t" + process.env.CACHE_FILESYSTEM_DIR)
+console.log("\n\n\n")
 
 let Database = new db(true)
 let isReady = false
