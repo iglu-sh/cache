@@ -19,7 +19,7 @@ jobs:
       id: build_image
       run: |
         nix build .#iglu-cache-docker
-        nix-env -iA nixos.docker
+        apt install docker
         docker load < result
         echo version=$(docker images | grep iglu-cache-docker | awk '{print $2}') >> "$GITHUB_OUTPUT"
         docker image tag $(docker images | grep iglu-cache-docker | awk '{print $3}') iglu-cache-docker:latest 
