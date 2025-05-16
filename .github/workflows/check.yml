@@ -1,5 +1,7 @@
 ---
 name: "Check build and nix formatting"
+permissions:
+  contents: read
 on:
   pull_request:
 
