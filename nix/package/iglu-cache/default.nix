@@ -6,9 +6,9 @@
 }:
 
 let
-  src = ../..;
+  inherit (packageJSON) version;
+  src = ../../..;
   packageJSON = lib.importJSON "${src}/package.json";
-  version = packageJSON.version;
   pname = packageJSON.name;
 
   nodeModules = stdenv.mkDerivation {
@@ -69,7 +69,7 @@ stdenv.mkDerivation rec{
 
     runHook postConfigure
   '';
-  
+
   installPhase = ''
     runHook preInstall
 

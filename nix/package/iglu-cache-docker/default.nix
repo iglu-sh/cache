@@ -1,21 +1,20 @@
-{ dockerTools 
-, iglu-cache
+{ dockerTools
+, iglu
 , bash
-, lib
 }:
 
 dockerTools.buildImage {
   name = "iglu-cache-docker";
-  tag = "v${iglu-cache.version}";
+  tag = "v${iglu.iglu-cache.version}";
 
   copyToRoot = [
-    iglu-cache
+    iglu.iglu-cache
     bash
   ];
 
   config = {
     ExposedPorts = {
-      "3000/tcp" = {};
+      "3000/tcp" = { };
     };
     Cmd = [ "/bin/iglu-cache" ];
   };
