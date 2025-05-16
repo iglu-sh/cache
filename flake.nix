@@ -29,6 +29,7 @@
         {
           devShell = nixpkgs.mkShell {
             packages = with nixpkgs; [
+              zsh
               wget
               cachix
               bun
