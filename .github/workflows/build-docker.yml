@@ -30,15 +30,24 @@ jobs:
       run: |
         docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
         for system in x86_64-linux aarch64-linux; do
+          echo
+          echo
+          echo "Building docker for $system!"
           nix build .#packages.$system.iglu-cache-docker
           docker load < result
           version=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f1)
         done
 
-        docker push ghcr.io/iglu-api/iglu-cache-docker:$version-arm64 
-        docker push ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 
+        echo
+        echo
+        echo "Pushing docker to ghcr.io!"
+        docker push localhost/iglu-api/iglu-cache-docker:$version-arm64 ghcr.io/iglu-api/iglu-cache-docker:$version-arm64 
+        docker push localhost/iglu-api/iglu-cache-docker:$version-amd64 ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 
 
         for tag in latest $version; do
+          echo
+          echo
+          echo "Creating multiarch image for $tag!"
           docker manifest create ghcr.io/iglu-api/iglu-cache-docker:$tag \
           --amend iglu-api/iglu-cache-docker:$version-amd64 \
           --amend iglu-api/iglu-cache-docker:$version-arm64
