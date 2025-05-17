@@ -75,7 +75,6 @@ stdenv.mkDerivation rec{
 
     mkdir -p $out/share/${pname}/
     mkdir $out/bin
-    cp -r $src/pm_tests $out/share/${pname}/
     cp -r $src/routes $out/share/${pname}/
     cp -r $src/utils $out/share/${pname}/
     cp $src/index.ts $out/share/${pname}/
