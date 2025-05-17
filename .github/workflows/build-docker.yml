@@ -30,9 +30,14 @@ jobs:
       run: |
         nix build .#iglu-cache-docker
         podman load < result
-        echo "version=$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}')" >> $GITHUB_OUTPUT
-        echo "arch=$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f2)" >> $GITHUB_OUTPUT
-        podman image tag iglu-cache-docker:$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}') iglu-cache-docker:latest 
+
+        version=$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}')
+        arch=$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f2)
+
+        echo "version=$version" >> $GITHUB_OUTPUT
+        echo "arch=$arch" >> $GITHUB_OUTPUT
+
+        podman image tag iglu-cache-docker:$version iglu-cache-docker:latest-$arch 
     - name: Push To GHCR
       uses: redhat-actions/push-to-registry@v2.8
       with:
