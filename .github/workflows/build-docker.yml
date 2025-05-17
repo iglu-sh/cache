@@ -8,9 +8,6 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        system: [x86_64-linux, aarch64-linux]
     runs-on: ubuntu-latest 
     permissions:
       contents: read
@@ -31,21 +28,29 @@ jobs:
     - name: Build container image
       id: build_image
       run: |
-        nix build .#packages.${{ matrix.system }}.iglu-cache-docker
-        docker load < result
+        for system in x86_64-linux aarch64-linux; do
+          nix build .#packages.$system.iglu-cache-docker
+          docker load < result
 
-        version=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}')
-        arch=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f2)
+          version=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f1)
 
-        echo "version=$version" >> $GITHUB_OUTPUT
-        echo "arch=$arch" >> $GITHUB_OUTPUT
+          echo "version=$version" >> $GITHUB_OUTPUT
+        done
 
-        docker image tag iglu-cache-docker:$version iglu-cache-docker:latest-$arch 
+        for tag in latest $version; do
+          docker manifest create iglu-api/iglu-cache-docker:$tag \
+            iglu-api/iglu-cache-docker:$version-amd64 \
+            iglu-api/iglu-cache-docker:$version-arm64
+          docker manifest annotate iglu-api/iglu-cache-docker:$tag \
+            iglu-api/iglu-cache-docker:$version-arm64 --arch arm64
+          docker manifest annotate iglu-api/iglu-cache-docker \
+            iglu-api/iglu-cache-docker:$version-amd64 --arch amd64
+        done
     - name: Push To GHCR
       uses: redhat-actions/push-to-registry@v2.8
       with:
         image: iglu-cache-docker  
-        tags: ${{ steps.build_image.outputs.version }} latest-${{ steps.build_image.outputs.arch }}
+        tags: ${{ steps.build_image.outputs.version }} latest
         registry: ghcr.io/${{ github.repository_owner }}
         username: ${{ github.actor }} 
         password: ${{ secrets.GITHUB_TOKEN }}
