@@ -38,6 +38,8 @@ jobs:
           version=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f1)
         done
 
+        docker images
+
         echo
         echo
         echo "Pushing docker to ghcr.io!"
