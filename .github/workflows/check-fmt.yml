@@ -1,18 +1,13 @@
 ---
-name: "Check build and nix formatting"
+name: "Check nix formatting"
 permissions:
   contents: read
 on:
   pull_request:
 
 jobs:
-  check:
+  check_fmt:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platforms:
-          - linux/arm64
-          - linux/x64
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
@@ -20,6 +15,4 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
       - name: "Check nix stuff"
         run: nix develop --command flakecheck
-      - name: "Build docker"
-        run: nix build .#iglu-cache-docker
 
