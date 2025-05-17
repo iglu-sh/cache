@@ -28,6 +28,8 @@ jobs:
     - name: Build container image
       id: build_image
       run: |
+        uname -a
+
         nix build .#iglu-cache-docker
         podman load < result
 
