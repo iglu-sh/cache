@@ -8,9 +8,6 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        system: [x86_64-linux, aarch64-linux]
     runs-on: ubuntu-latest 
     permissions:
       contents: read
@@ -31,24 +28,31 @@ jobs:
     - name: Build container image
       id: build_image
       run: |
-        nix build .#packages.${{ matrix.system }}.iglu-cache-docker
-        docker load < result
+        docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+        for system in x86_64-linux aarch64-linux; do
+          echo
+          echo
+          echo "Building docker for $system!"
+          nix build .#packages.$system.iglu-cache-docker
+          sudo docker load < result
+          version=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f1)
+        done
 
-        version=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}')
-        arch=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f2)
+        echo
+        echo
+        echo "Pushing docker to ghcr.io!"
+        docker tag iglu-cache-docker:$version-arm64 ghcr.io/iglu-api/iglu-cache-docker:$version-arm64 
+        docker tag iglu-cache-docker:$version-amd64 ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 
+        docker push ghcr.io/iglu-api/iglu-cache-docker:$version-arm64 
+        docker push ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 
 
-        echo "version=$version" >> $GITHUB_OUTPUT
-        echo "arch=$arch" >> $GITHUB_OUTPUT
-
-        docker image tag iglu-cache-docker:$version iglu-cache-docker:latest-$arch 
-    - name: Push To GHCR
-      uses: redhat-actions/push-to-registry@v2.8
-      with:
-        image: iglu-cache-docker  
-        tags: ${{ steps.build_image.outputs.version }} latest-${{ steps.build_image.outputs.arch }}
-        registry: ghcr.io/${{ github.repository_owner }}
-        username: ${{ github.actor }} 
-        password: ${{ secrets.GITHUB_TOKEN }}
-        extra-args: |
-          --disable-content-trust
+        for tag in latest $version; do
+          echo
+          echo
+          echo "Creating multiarch image for $tag!"
+          docker manifest create ghcr.io/iglu-api/iglu-cache-docker:$tag \
+          --amend ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 \
+          --amend ghcr.io/iglu-api/iglu-cache-docker:$version-arm64
+          docker manifest push ghcr.io/iglu-api/iglu-cache-docker:$tag
+        done
 
