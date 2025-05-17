@@ -28,7 +28,7 @@ jobs:
     - name: Build container image
       id: build_image
       run: |
-        sudo docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+        docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
         for system in x86_64-linux aarch64-linux; do
           echo
           echo
@@ -38,21 +38,21 @@ jobs:
           version=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f1)
         done
 
-        #echo
-        #echo
-        #echo "Pushing docker to ghcr.io!"
-        #docker tag iglu-cache-docker:$version-arm64 ghcr.io/iglu-api/iglu-cache-docker:$version-arm64 
-        #docker tag iglu-cache-docker:$version-amd64 ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 
-        #docker push ghcr.io/iglu-api/iglu-cache-docker:$version-arm64 
-        #docker push ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 
+        echo
+        echo
+        echo "Pushing docker to ghcr.io!"
+        docker tag iglu-cache-docker:$version-arm64 ghcr.io/iglu-api/iglu-cache-docker:$version-arm64 
+        docker tag iglu-cache-docker:$version-amd64 ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 
+        docker push ghcr.io/iglu-api/iglu-cache-docker:$version-arm64 
+        docker push ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 
 
         for tag in latest $version; do
           echo
           echo
           echo "Creating multiarch image for $tag!"
-          sudo docker manifest create iglu-api/iglu-cache-docker:$tag \
-          --amend iglu-cache-docker:$version-amd64 \
-          --amend iglu-cache-docker:$version-arm64
-          sudo docker manifest push ghcr.io/iglu-api/iglu-cache-docker:$tag
+          docker manifest create ghcr.io/iglu-api/iglu-cache-docker:$tag \
+          --amend ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 \
+          --amend ghcr.io/iglu-api/iglu-cache-docker:$version-arm64
+          docker manifest push ghcr.io/iglu-api/iglu-cache-docker:$tag
         done
 
