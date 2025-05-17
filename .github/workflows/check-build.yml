@@ -17,5 +17,5 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
       - name: "Build docker"
-        run: nix build .#packages.${arch}.iglu-cache-docker
+        run: nix build .#packages.${{ matrix.arch }}.iglu-cache-docker
 

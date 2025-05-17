@@ -26,7 +26,7 @@ jobs:
     - name: Build container image
       id: build_image
       run: |
-        nix build .#packages.${arch}.iglu-cache-docker
+        nix build .#packages.${{ matrix.arch }}.iglu-cache-docker
         podman load < result
 
         version=$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}')
