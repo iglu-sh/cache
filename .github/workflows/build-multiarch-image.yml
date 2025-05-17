@@ -21,7 +21,7 @@ jobs:
       run: |
         version=$(cat package.json | grep version | awk '{print $2}' | cut -d'"' -f 2)
         echo "version=$version" >> $GITHUB_OUTPUT
-        for tag in "$version latest"; do
+        for tag in $version latest; do
           docker pull ghcr.io/iglu-api/iglu-cache-docker:$tag-arm64
           docker pull ghcr.io/iglu-api/iglu-cache-docker:$tag-amd64
           docker manifest create ghcr.io/iglu-api/iglu-cache-docker:$tag \
