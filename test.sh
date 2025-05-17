@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
-  version=$(cat package.json | grep version | awk '{print $2}' | cut -d'"' -f 2)
+for system in x86_64-linux aarch64-linux; do
+  nix build .#packages.$system.iglu-cache-docker
+  docker load < result
+
+  version=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f1)
+
   echo "version=$version" >> $GITHUB_OUTPUT
-  for tag in $version latest; do
-    docker pull ghcr.io/iglu-api/iglu-cache-docker:$tag-arm64
-    docker pull ghcr.io/iglu-api/iglu-cache-docker:$tag-amd64
-    docker manifest create ghcr.io/iglu-api/iglu-cache-docker:$tag \
-      ghcr.io/iglu-api/iglu-cache-docker:$tag-amd64 \
-      ghcr.io/iglu-api/iglu-cache-docker:$tag-arm64
-    docker manifest annotate ghcr.io/iglu-api/iglu-cache-docker:$tag \
-      ghcr.io/iglu-api/iglu-cache-docker:$tag-arm64 --arch arm64
-    docker manifest annotate ghcr.io/iglu-api/iglu-cache-docker \
-      ghcr.io/iglu-api/iglu-cache-docker:$tag-amd64 --arch amd64
-  done
+done
+
+for tag in latest $version; do
+  docker manifest create iglu-api/iglu-cache-docker:$tag \
+    localhost/iglu-api/iglu-cache-docker:$version-amd64 \
+    localhost/iglu-api/iglu-cache-docker:$version-arm64
+  docker manifest annotate iglu-api/iglu-cache-docker:$tag \
+    localhost/iglu-api/iglu-cache-docker:$version-arm64 --arch arm64
+  docker manifest annotate iglu-api/iglu-cache-docker \
+    localhost/iglu-api/iglu-cache-docker:$version-amd64 --arch amd64
+done

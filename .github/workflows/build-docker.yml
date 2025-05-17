@@ -36,16 +36,6 @@ jobs:
 
           echo "version=$version" >> $GITHUB_OUTPUT
         done
-
-        for tag in latest $version; do
-          docker manifest create iglu-api/iglu-cache-docker:$tag \
-            localhost/iglu-api/iglu-cache-docker:$version-amd64 \
-            localhost/iglu-api/iglu-cache-docker:$version-arm64
-          docker manifest annotate iglu-api/iglu-cache-docker:$tag \
-            localhost/iglu-api/iglu-cache-docker:$version-arm64 --arch arm64
-          docker manifest annotate iglu-api/iglu-cache-docker \
-            localhost/iglu-api/iglu-cache-docker:$version-amd64 --arch amd64
-        done
     - name: Push To GHCR
       uses: redhat-actions/push-to-registry@v2.8
       with:
@@ -56,4 +46,19 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
         extra-args: |
           --disable-content-trust
+    - name: Build Multiarch
+      run: |
+        docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+        for tag in latest $version; do
+          docker manifest create ghcr.io/iglu-api/iglu-cache-docker:$tag \
+            ghrc.io/iglu-api/iglu-cache-docker:$version-amd64 \
+            ghrc.io/iglu-api/iglu-cache-docker:$version-arm64
+          docker manifest annotate iglu-api/iglu-cache-docker:$tag \
+            ghrc.io/iglu-api/iglu-cache-docker:$version-arm64 --arch arm64
+          docker manifest annotate iglu-api/iglu-cache-docker:$tag \
+            ghrc.io/iglu-api/iglu-cache-docker:$version-amd64 --arch amd64
+          docker manifest push ghcr.io/iglu-api/iglu-cache-docker:$tag
+        done
+      env:
+        version: ${{ steps.build_image.outputs.version }}
 
