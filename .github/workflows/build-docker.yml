@@ -11,9 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platforms:
-          - linux/arm64
-          - linux/x64
+        arch: [amd64, arm64]
     permissions:
       contents: read
       packages: write
