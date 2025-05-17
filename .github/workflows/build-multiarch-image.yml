@@ -14,9 +14,6 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    packages: write
-    attestations: write
-    id-token: write
     steps:
       - name: Build multiarch image
         id: build_image
