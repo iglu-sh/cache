@@ -22,6 +22,6 @@ jobs:
       - name: "Build docker"
         run: |
           for system in x86_64-linux aarch64-linux; do
-            nix build .#packages.${{ matrix.system }}.iglu-cache-docker
+            nix build .#packages.$system.iglu-cache-docker
           done
 
