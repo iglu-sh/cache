@@ -38,13 +38,13 @@ jobs:
           version=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f1)
         done
 
-        echo
-        echo
-        echo "Pushing docker to ghcr.io!"
-        docker tag iglu-cache-docker:$version-arm64 ghcr.io/iglu-api/iglu-cache-docker:$version-arm64 
-        docker tag iglu-cache-docker:$version-amd64 ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 
-        docker push ghcr.io/iglu-api/iglu-cache-docker:$version-arm64 
-        docker push ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 
+        #echo
+        #echo
+        #echo "Pushing docker to ghcr.io!"
+        #docker tag iglu-cache-docker:$version-arm64 ghcr.io/iglu-api/iglu-cache-docker:$version-arm64 
+        #docker tag iglu-cache-docker:$version-amd64 ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 
+        #docker push ghcr.io/iglu-api/iglu-cache-docker:$version-arm64 
+        #docker push ghcr.io/iglu-api/iglu-cache-docker:$version-amd64 
 
         for tag in latest $version; do
           echo
