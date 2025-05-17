@@ -22,26 +22,25 @@ jobs:
     - uses: docker/setup-qemu-action@v3
       with:
         platforms: arm64
-    - uses: gacts/install-podman@v1
     - uses: cachix/install-nix-action@v31
       with:
         nix_path: nixpkgs=channel:nixos-unstable
         extra_nix_config: |
-          extra-platforms = aarch64-linux i686-linux
+          extra-platforms = aarch64-linux
           extra-sandbox-paths = /usr/bin
     - name: Build container image
       id: build_image
       run: |
         nix build .#packages.${{ matrix.system }}.iglu-cache-docker
-        podman load < result
+        docker load < result
 
-        version=$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}')
-        arch=$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f2)
+        version=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}')
+        arch=$(docker images | grep iglu-cache-docker | head -n1 | awk '{print $2}' | cut -d- -f2)
 
         echo "version=$version" >> $GITHUB_OUTPUT
         echo "arch=$arch" >> $GITHUB_OUTPUT
 
-        podman image tag iglu-cache-docker:$version iglu-cache-docker:latest-$arch 
+        docker image tag iglu-cache-docker:$version iglu-cache-docker:latest-$arch 
     - name: Push To GHCR
       uses: redhat-actions/push-to-registry@v2.8
       with:
