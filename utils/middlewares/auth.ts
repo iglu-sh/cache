@@ -28,8 +28,9 @@ export async function isAuthenticated (req: any, res: any, next: any):Promise<bo
             res.status(403).json({ message: 'Forbidden' });
             return false
         }
+
         // Check if the decoded token  matches the cache name
-        if (!decoded.name || decoded.name !== req.params.cache) {
+        if (!decoded.name) {
             res.status(403).json({ message: 'Forbidden' });
             return false
         }
