@@ -5,6 +5,7 @@
     utils.url = "github:gytis-ivaskevicius/flake-utils-plus?ref=afcb15b845e74ac5e998358709b2b5fe42a948d1";
   };
 
+  # deadnix: skip
   outputs = inputs@{ self, nixpkgs, utils }:
     utils.lib.mkFlake {
       inherit self inputs;
@@ -22,21 +23,26 @@
       ];
 
       outputsBuilder = channels:
-      let
-        inherit (channels) nixpkgs;
-      in
-      {
-        devShell = nixpkgs.mkShell {
-          packages = with nixpkgs; [
-            wget
-            cachix
-            bun
-          ];
-          shellHook = ''
-            exec zsh
-          '';
+        let
+          inherit (channels) nixpkgs;
+        in
+        {
+          devShell = nixpkgs.mkShell {
+            packages = with nixpkgs; [
+              zsh
+              wget
+              cachix
+              bun
+              iglu.flakecheck
+              statix
+              deadnix
+              nixpkgs-fmt
+            ];
+            shellHook = ''
+              exec zsh
+            '';
+          };
+          packages = nixpkgs.iglu;
         };
-        packages = nixpkgs;
-      };
     };
 }

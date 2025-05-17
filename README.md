@@ -9,7 +9,11 @@ You need a working bun installation as well as a working postgres database. It i
 You need a .env file with at least the following variables:
 - `CACHE_ROOT_DOMAIN`: The domain name of where your cache server should be available.
 - `CACHE_FILESYSTEM_DIR`: The directory where the cache files should be stored (Careful, there will be a lot of read and writes happening at this dir, so choose accordingly).
-- `POSTGRES_CONNECTION_STRING`: The connection string to your postgres database.
+- `POSTGRES_HOST`: Host of the postgresql server.
+- `POSTGRES_PORT`: Port of the postgresql server.
+- `POSTGRES_USER`: User of the postgresql server.
+- `POSTGRES_PASSWORD`: Password for the user of the postgresql server.
+- `POSTGRES_DB`: Database of the postgresql server.
 ```bash
 bun install
 bun run prod

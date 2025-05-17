@@ -35,9 +35,13 @@ export const get = [
             }
 
             //Get the derivation file path
-            let filePath = ""
+            let filePath:{id:number, cache:number, path:string} = {
+                id: -1,
+                cache: -1,
+                path: ''
+            }
             try{
-                filePath = await Database.getDerivationPath(cacheID, nixDerivationHash)
+                filePath = await Database.getDerivation(cacheID, nixDerivationHash)
             }
             catch(e){
                 console.log(`Derivation ${nixDerivationHash} not found`)
@@ -45,14 +49,20 @@ export const get = [
                     error: 'Derivation not found',
                 })
             }
+            if(!filePath || filePath.id === -1 || filePath.cache === -1){
+                console.log(`Derivation ${nixDerivationHash} not found`)
+                return res.status(404).json({
+                    error: 'Derivation not found',
+                })
+            }
             //Load the derivation file and send it to the client
-            const data = fs.readFileSync(filePath, 'binary')
+            const data = fs.existsSync(filePath.path)
             if(!data){
                 return res.status(404).json({
                     error: 'Derivation not found',
                 })
             }
-            res.status(200).sendFile(filePath, (err)=>{
+            res.status(200).sendFile(filePath.path, (err)=>{
                 if(err){
                     console.error(err)
                     return res.status(500).json({
@@ -60,6 +70,7 @@ export const get = [
                     })
                 }
             })
+            await Database.logRequest(filePath.id, filePath.cache, 'outbound')
             console.log(`Sent ${nixDerivationHash} to ${req.ip}`)
             return
         }

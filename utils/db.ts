@@ -2,9 +2,15 @@ import { Client } from 'pg';
 import type {cache, storeNarInfo} from "./types.d/dbTypes.ts";
 import type {CacheInfo, narUploadSuccessRequestBody} from "./types.d/apiTypes.ts";
 export default class Database {
+    
     private db:Client = new Client({
-        connectionString: process.env.POSTGRES_CONNECTION_STRING,
+      user: process.env.POSTGRES_USER,
+      password: process.env.POSTGRES_PASSWORD,
+      host: process.env.POSTGRES_HOST,
+      port: process.env.POSTGRES_PORT,
+      database: process.env.POSTGRES_DB,
     })
+    
     constructor(skipConnection:boolean = false){
         if(!skipConnection){
             this.db.connect()
@@ -58,6 +64,23 @@ export default class Database {
                     compression TEXT NOT NULL
                 );
             `)
+
+        await this.db.query(`
+            create table if not exists cache.request
+            (
+                id       bigserial
+                    constraint request_pk
+                        primary key,
+                hash     BIGINT
+                    constraint hash_fk
+                        references cache.hashes,
+                cache_id bigint
+                    constraint cache_fk
+                        references cache.caches,
+                type     TEXT,
+                time     timestamp default now() not null
+            );
+        `)
     }
 
     public async getCaches():Promise<Array<cache>> {
@@ -84,6 +107,7 @@ export default class Database {
                 (path, cache, cderiver, cfilehash, cfilesize, cnarhash, cnarsize, creferences, csig, cstorehash, cstoresuffix, parts, compression)
             VALUES 
                 ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+            RETURNING *
         `,
             [
                 `${process.env.CACHE_FILESYSTEM_DIR}/nar_files/${cache}/${uid}.nar.${compression}`,
@@ -100,7 +124,9 @@ export default class Database {
                 narReturn.parts.map((part)=>{return JSON.stringify(part)}).map((part)=>{return JSON.parse(part)}), //Convert the parts to JSONB
                 compression
             ]
-        )
+        ).then(async (res)=>{
+            await this.logRequest(res.rows[0].id, res.rows[0].cache, "inbound")
+        })
     }
 
 
@@ -234,12 +260,16 @@ export default class Database {
         })
     }
 
-    public async getDerivationPath(cache:number, derivation:string): Promise<string>{
-        const hashResults = await this.db.query('SELECT path FROM cache.hashes WHERE cache = $1 AND cstorehash = $2', [cache, derivation])
+    public async getDerivation(cache:number, derivation:string): Promise<{
+        id:number,
+        cache:number,
+        path: string
+    }>{
+        const hashResults = await this.db.query('SELECT id, path, cache FROM cache.hashes WHERE cache = $1 AND cstorehash = $2', [cache, derivation])
         if(hashResults.rows.length === 0){
             throw new Error('Derivation not found')
         }
-        return hashResults.rows[0].path
+        return hashResults.rows[0]
     }
 
     public async createCache(name:string, permission:string, isPublic:boolean, githubUsername:string, preferredCompressionMethod:string, uri:string):Promise<void>{
@@ -262,5 +292,11 @@ export default class Database {
             "UPDATE cache.caches SET publicSigningKeys = $1 WHERE id = $2",
             [key, id]
         )
+    }
+
+    public async logRequest(hashID:number, cacheID:number, type:string):Promise<void>{
+        await this.db.query(`
+            INSERT INTO cache.request (hash, cache_id, type) VALUES($1, $2, $3)
+        `,[hashID, cacheID, type])
     }
 }

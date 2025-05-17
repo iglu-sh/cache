@@ -9,48 +9,37 @@ import {makeApiKey} from "./utils/apiKeys.ts";
 import 'dotenv/config'
 const app = require('express')()
 const pino = require('pino-http')()
-//Check if the environment variables are set
-if(!process.env.CACHE_ROOT_DOMAIN){
-    //Show an error message as we cannot create a cache without a root domain
-    console.error('No CACHE_ROOT_DOMAIN set, please set it in the .env file or your environment')
+
+let envs = [
+  "CACHE_ROOT_DOMAIN",
+  "CACHE_JWT_SECRET",
+  "CACHE_FILESYSTEM_DIR",
+  "POSTGRES_DB",
+  "POSTGRES_USER",
+  "POSTGRES_HOST",
+  "POSTGRES_PASSWORD",
+  "POSTGRES_PORT"
+];
+
+envs.forEach(env => {
+  if(!process.env[env]){
+    console.error('No ' + env + ' set, please set it in the .env file or your environment')
     process.exit(1)
-}
-if(!process.env.POSTGRES_CONNECTION_STRING){
-   //Show an error message as we cannot connect to the database
-    console.error('No POSTGRES_CONNECTION_STRING set, please set it in the .env file or your environment')
-    process.exit(1)
-}
-if(!process.env.CACHE_FILESYSTEM_DIR){
-    //We need a directory to store the files in
-    console.error('No CACHE_FILESYSTEM_DIR set, please set it in the .env file or your environment')
-    process.exit(1)
-}
-if(!process.env.CACHE_JWT_SECRET){
-    //A secret must be provided to sign the jwt tokens
-    console.error('No CACHE_JWT_SECRET set, please set it in the .env file or your environment')
-    process.exit(1)
-}
+  }
+})
+
 // Print config
-const split = process.env.POSTGRES_CONNECTION_STRING.split(":")
-const split2 = split[2].split("@")
-const split3 = split[3].split("/")
-
-let db_port = split3[0]
-let db_host = split2[1]
-let db_user = split[1]?.replaceAll("/", "")
-let db_db = split3[1]
-
 console.log("----------CONFIG----------")
-console.log("Database Host:\t" + db_host)
-console.log("Database Port:\t" + db_port)
-console.log("Database User:\t" + db_user)
-console.log("Database DB:\t" + db_db)
+console.log("Database Host:\t" + process.env.POSTGRES_HOST)
+console.log("Database Port:\t" + process.env.POSTGRES_PORT)
+console.log("Database User:\t" + process.env.POSTGRES_USER)
+console.log("Database DB:\t" + process.env.POSTGRES_DB)
 console.log("Root Domain:\t" + process.env.CACHE_ROOT_DOMAIN)
 console.log("Filesystem Dir:\t" + process.env.CACHE_FILESYSTEM_DIR)
 console.log("\n\n\n")
 
-let Database = new db(true)
 let isReady = false
+let Database
 while(!isReady){
     try {
         Database = new db(true)
@@ -96,7 +85,11 @@ for(const pathObj of paths.rows){
     if(!fs.existsSync(pathObj.path)){
         console.log(`Path ${pathObj.path} does not exist, removing from database`)
         //Delete the path from the database
+        await Database.getDirectAccess().query(`
+            DELETE FROM cache.request WHERE hash = ${pathObj.id}
+        `)
         await Database.deletePath(pathObj.id)
+
         continue
     }
 
