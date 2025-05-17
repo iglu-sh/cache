@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [amd64, arm64]
+        arch: [x86_64-linux, aarch64-linux]
     permissions:
       contents: read
       packages: write
@@ -26,9 +26,7 @@ jobs:
     - name: Build container image
       id: build_image
       run: |
-        uname -a
-
-        nix build .#iglu-cache-docker
+        nix build .#packages.${arch}.iglu-cache-docker
         podman load < result
 
         version=$(podman images | grep iglu-cache-docker | head -n1 | awk '{print $2}')
