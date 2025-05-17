@@ -8,6 +8,11 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platforms:
+          - linux/arm64
+          - linux/x64
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
