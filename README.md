@@ -8,7 +8,7 @@ You need a working bun installation as well as a working postgres database. It i
 
 You need a .env file with at least the following variables:
 - `CACHE_ROOT_DOMAIN`: The domain name of where your cache server should be available.
-- `AUTO_FIX_CACHE_ROOT_DOMAIN`: If this stands on false the `CACHE_ROOT_DOMAIN` is only used for new caches. If this is set to true (which is default) all caches get the new domain on startup. 
+- `AUTO_FIX_CACHE_ROOT_DOMAIN`: If this is set to false the `CACHE_ROOT_DOMAIN` is only used for new caches. If this is set to true (which is the default) all caches get the new domain on startup. 
 - `CACHE_FILESYSTEM_DIR`: The directory where the cache files should be stored (Careful, there will be a lot of read and writes happening at this dir, so choose accordingly).
 - `POSTGRES_HOST`: Host of the postgresql server.
 - `POSTGRES_PORT`: Port of the postgresql server.
