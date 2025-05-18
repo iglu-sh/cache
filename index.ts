@@ -61,7 +61,7 @@ await Database.getAllCaches().then(async (caches:Array<cache>)=>{
     }
     caches = await Database.getAllCaches()
     for (const cache of caches) {
-        //Updateing CACHE_ROOT_DOMAIN if needed
+        //Updating CACHE_ROOT_DOMAIN if needed
         if(cache.uri != process.env.CACHE_ROOT_DOMAIN && process.env.AUTO_FIX_CACHE_ROOT_DOMAIN !== "false"){
           console.log("Updating CACHE_ROOT_DOMAIN for cache \"" + cache.name + "\"")
           await Database.updateCacheURI(process.env.CACHE_ROOT_DOMAIN, cache.id)
