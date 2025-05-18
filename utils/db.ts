@@ -299,4 +299,10 @@ export default class Database {
             INSERT INTO cache.request (hash, cache_id, type) VALUES($1, $2, $3)
         `,[hashID, cacheID, type])
     }
+
+    public async updateCacheURI(uri:string, cacheID:number):Promise<void>{
+      await this.db.query(`
+          UPDATE cache.caches SET uri = $1 WHERE id = $2
+      `, [uri, cacheID])
+    }
 }
