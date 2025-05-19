@@ -8,11 +8,12 @@ export type cache = {
     permission: string;
     preferredCompressionMethod: string;
     publicSigningKeys: Array<string>;
-    allowedKeys: Array<string>;
     uri: string;
     priority: number;
 }
-
+export interface cacheWithKeys extends cache {
+    allowedKeys: Array<string>;
+}
 export type storeNarInfo = {
     id: number;
     path: string,

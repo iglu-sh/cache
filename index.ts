@@ -4,7 +4,7 @@ import fs from "fs";
 import raw from 'express'
 import db from "./utils/db";
 import createRouter, {router} from "express-file-routing"
-import type {cache} from "./utils/types.d/dbTypes.ts";
+import type {cache, cacheWithKeys} from "./utils/types.d/dbTypes.ts";
 import {makeApiKey} from "./utils/apiKeys.ts";
 import 'dotenv/config'
 const app = require('express')()
@@ -39,7 +39,7 @@ console.log("Filesystem Dir:\t" + process.env.CACHE_FILESYSTEM_DIR)
 console.log("\n\n\n")
 
 let isReady = false
-let Database
+let Database: db
 while(!isReady){
     try {
         Database = new db(true)
@@ -53,7 +53,7 @@ while(!isReady){
     }
 }
 await Database.setupDB();
-await Database.getAllCaches().then(async (caches:Array<cache>)=>{
+await Database.getAllCaches().then(async (caches:Array<cacheWithKeys>)=>{
     if(caches.length === 0){
         //Create a default cache
         console.log('No caches found, creating default cache')
@@ -66,9 +66,7 @@ await Database.getAllCaches().then(async (caches:Array<cache>)=>{
           console.log("Updating CACHE_ROOT_DOMAIN for cache \"" + cache.name + "\"")
           await Database.updateCacheURI(process.env.CACHE_ROOT_DOMAIN, cache.id)
         }
-
-        //Create Key if needed
-        if(cache.allowedKeys.length === 0){
+        if(cache.allowedKeys.length === 0 || cache.allowedKeys[0] === null){
             const cacheKey = makeApiKey(cache.name)
             console.log(`Initial Key for cache ${cache.name}: ${cacheKey}`)
             try{

@@ -1,5 +1,5 @@
 import { Client } from 'pg';
-import type {cache, storeNarInfo} from "./types.d/dbTypes.ts";
+import type {cache, cacheWithKeys, storeNarInfo} from "./types.d/dbTypes.ts";
 import type {CacheInfo, narUploadSuccessRequestBody} from "./types.d/apiTypes.ts";
 export default class Database {
     
@@ -35,7 +35,6 @@ export default class Database {
                         permission TEXT,
                         preferredCompressionMethod TEXT,
                         publicSigningKeys TEXT,
-                        allowedKeys TEXT[],
                         uri TEXT,
                         priority INTEGER DEFAULT 40
                     )
@@ -80,6 +79,19 @@ export default class Database {
                 type     TEXT,
                 time     timestamp default now() not null
             );
+        `)
+
+        await this.db.query(`
+            create table if not exists cache.keys
+                (
+                id serial constraint keys_pk primary key,
+                cache_id int constraint cache_fk references cache.caches,
+                name text not null,
+                hash text not null,
+                description text,
+                created_at timestamp default now() not null,
+                permissions text default 'none'
+            )
         `)
     }
 
@@ -199,6 +211,7 @@ export default class Database {
             throw new Error(`Cache ${cache} not found`)
         }
         //Select all the paths that are in the database based on the paths given to use by the calling function
+        //TODO: This is not safe, we should use a parameterized query
         const pathsInDB = await this.db.query(`
             SELECT cstorehash FROM cache.hashes WHERE cache = $1 AND cstorehash IN ('${paths.join("','")}')
         `, [cacheID])
@@ -212,9 +225,14 @@ export default class Database {
         return await this.db.end();
     }
 
-    public async getAllCaches():Promise<Array<cache>> {
-        const caches = await this.db.query('SELECT * FROM cache.caches')
-        return caches.rows.map((row)=>{return {
+    public async getAllCaches():Promise<Array<cacheWithKeys>> {
+        const caches = await this.db.query(`
+        SELECT c.*, array_agg(k.hash) as allowedKeys FROM cache.caches c
+            LEFT JOIN cache.keys k ON c.id = k.cache_id
+        GROUP BY c.id
+        `)
+        return caches.rows.map((row)=>{
+            return {
             id: row.id,
             githubUsername: row.githubusername,
             isPublic: row.ispublic,
@@ -222,20 +240,21 @@ export default class Database {
             permission: row.permission,
             preferredCompressionMethod: row.preferredcompressionmethod,
             publicSigningKeys: row.publicsigningkeys,
-            allowedKeys: row.allowedkeys,
             uri: row.uri,
+            allowedKeys : row.allowedkeys,
             priority: row.priority
         }})
     }
     public async getAllowedKeys(cache:number):Promise<Array<string>> {
-        const caches = await this.db.query('SELECT allowedKeys FROM cache.caches WHERE id = $1', [cache])
-        if(caches.rows.length === 0){
-            throw new Error('Cache not found')
-        }
+        const caches = await this.db.query('SELECT array_agg(hash) as allowedKeys FROM cache.keys WHERE cache_id = $1 GROUP BY cache_id', [cache])
         return caches.rows[0].allowedkeys
     }
     public async appendApiKey(cache:number, key:string):Promise<void> {
-        await this.db.query('UPDATE cache.caches SET allowedKeys = array_append(allowedKeys, $1) WHERE id = $2', [key, cache])
+        //Hash the key
+        const hash = await Bun.password.hash(key)
+        await this.db.query(`
+            INSERT INTO cache.keys (cache_id, name, description, hash) VALUES ($1, $2, $3, $4)
+        `, [cache, "Starting Key", "With love from the Iglu team", hash])
     }
 
     public async getStoreNarInfo(cache:number, hash:string): Promise<storeNarInfo[]>{

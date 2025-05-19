@@ -49,11 +49,26 @@ export async function isAuthenticated (req: any, res: any, next: any):Promise<bo
 
             //Check if the api key is allowed to push this cache
             const keys = await Database.getAllowedKeys(cacheID)
-            if(keys.length === 0 || !keys.includes(token)){
+
+            if(keys.length === 0){
                 res.status(403).json({ message: 'Forbidden' });
                 return false
             }
-            return true
+
+            //TODO: Figure out a more processor efficient way to do this as this could be bad for performance if checking a lot of keys
+            /*
+            * This verifies that a given jwt token matches the hash stored in the database using the Argon2 password hashing algorithm.
+            * */
+            let hashIsVerified = false
+            for(const key of keys){
+                const hash = await Bun.password.verify(token, key)
+                if(hash){
+                    hashIsVerified = true
+                    break
+                }
+            }
+
+            return hashIsVerified;
         }
         return await wrap().then(async (result)=>{
             await Database.close()
