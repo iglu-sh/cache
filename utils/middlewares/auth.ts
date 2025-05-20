@@ -59,16 +59,14 @@ export async function isAuthenticated (req: any, res: any, next: any):Promise<bo
             /*
             * This verifies that a given jwt token matches the hash stored in the database using the Argon2 password hashing algorithm.
             * */
-            let hashIsVerified = false
-            for(const key of keys){
-                const hash = await Bun.password.verify(token, key)
-                if(hash){
-                    hashIsVerified = true
-                    break
-                }
+            const hasher = new Bun.CryptoHasher("sha512")
+            hasher.update(token)
+            const hash = hasher.digest('hex')
+            if(!hash || hash.length === 0 || !keys.includes(hash)){
+                res.status(403).json({ message: 'Forbidden' });
+                return false
             }
-
-            return hashIsVerified;
+            return true;
         }
         return await wrap().then(async (result)=>{
             await Database.close()

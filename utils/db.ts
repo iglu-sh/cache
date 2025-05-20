@@ -251,7 +251,10 @@ export default class Database {
     }
     public async appendApiKey(cache:number, key:string):Promise<void> {
         //Hash the key
-        const hash = await Bun.password.hash(key)
+        //TODO: Find out if we need a secret key here (I hope not)
+        const hasher = new Bun.CryptoHasher("sha512");
+        hasher.update(key)
+        const hash = hasher.digest("hex")
         await this.db.query(`
             INSERT INTO cache.keys (cache_id, name, description, hash) VALUES ($1, $2, $3, $4)
         `, [cache, "Starting Key", "With love from the Iglu team", hash])
@@ -293,9 +296,9 @@ export default class Database {
 
     public async createCache(name:string, permission:string, isPublic:boolean, githubUsername:string, preferredCompressionMethod:string, uri:string):Promise<void>{
         await this.db.query(`
-            INSERT INTO cache.caches (name, permission, isPublic, githubUsername, preferredCompressionMethod, uri, publicSigningKeys, allowedKeys) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        `, [name, permission, isPublic, githubUsername, preferredCompressionMethod, uri, '', []])
+            INSERT INTO cache.caches (name, permission, isPublic, githubUsername, preferredCompressionMethod, uri, publicSigningKeys) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `, [name, permission, isPublic, githubUsername, preferredCompressionMethod, uri, ''])
     }
 
     public getDirectAccess():Client{
