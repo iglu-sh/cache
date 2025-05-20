@@ -13,27 +13,6 @@ export async function isAuthenticated (req: any, res: any, next: any):Promise<bo
             res.status(403).json({ message: 'Forbidden' });
             return false
         }
-        // Verify the token
-        // Check if the token is valid
-        let decoded:any
-        try{
-            decoded = jwt.verify(token, process.env.CACHE_JWT_SECRET as string);
-        }
-        catch(e){
-            //Return a 403 error if the token is invalid
-            res.status(403).json({ message: 'Forbidden' });
-            return false;
-        }
-        if (!decoded) {
-            res.status(403).json({ message: 'Forbidden' });
-            return false
-        }
-
-        // Check if the decoded token  matches the cache name
-        if (!decoded.name) {
-            res.status(403).json({ message: 'Forbidden' });
-            return false
-        }
 
         // If everything is fine so far we can check if this api key is allowed to push this cache
         // Check if the cache exists
@@ -54,8 +33,6 @@ export async function isAuthenticated (req: any, res: any, next: any):Promise<bo
                 res.status(403).json({ message: 'Forbidden' });
                 return false
             }
-
-            //TODO: Figure out a more processor efficient way to do this as this could be bad for performance if checking a lot of keys
             /*
             * This verifies that a given jwt token matches the hash stored in the database using the Argon2 password hashing algorithm.
             * */
