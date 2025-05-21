@@ -85,12 +85,21 @@ export default class Database {
             create table if not exists cache.keys
                 (
                 id serial constraint keys_pk primary key,
-                cache_id int constraint cache_fk references cache.caches,
                 name text not null,
                 hash text not null,
                 description text,
                 created_at timestamp default now() not null,
-                permissions text default 'none'
+                updated_at timestamp default now() not null
+            )
+        `)
+        await this.db.query(`
+            create table if not exists cache.cache_key 
+            (
+                id serial constraint cache_key_pk primary key,
+                cache_id int constraint cache_fk references cache.caches,
+                key_id int constraint keys_fk references cache.keys,
+                permissions text default 'none',
+                created_at timestamp default now() not null
             )
         `)
     }
@@ -228,9 +237,11 @@ export default class Database {
     public async getAllCaches():Promise<Array<cacheWithKeys>> {
         const caches = await this.db.query(`
         SELECT c.*, array_agg(k.hash) as allowedKeys FROM cache.caches c
-            LEFT JOIN cache.keys k ON c.id = k.cache_id
+            LEFT JOIN cache.cache_key ck ON c.id = ck.cache_id
+            LEFT JOIN cache.keys k ON ck.key_id = k.id
         GROUP BY c.id
         `)
+
         return caches.rows.map((row)=>{
             return {
             id: row.id,
@@ -246,7 +257,11 @@ export default class Database {
         }})
     }
     public async getAllowedKeys(cache:number):Promise<Array<string>> {
-        const caches = await this.db.query('SELECT array_agg(hash) as allowedKeys FROM cache.keys WHERE cache_id = $1 GROUP BY cache_id', [cache])
+        const caches = await this.db.query(`
+            SELECT array_agg(hash) as allowedKeys FROM cache.keys 
+                INNER JOIN cache.cache_key ck ON keys.id = ck.key_id
+            WHERE ck.cache_id = $1 GROUP BY ck.cache_id
+        `, [cache])
         return caches.rows[0].allowedkeys
     }
     public async appendApiKey(cache:number, key:string):Promise<void> {
@@ -255,9 +270,19 @@ export default class Database {
         const hasher = new Bun.CryptoHasher("sha512");
         hasher.update(key)
         const hash = hasher.digest("hex")
+        const result = await this.db.query(`
+            INSERT INTO cache.keys (name, description, hash) VALUES ($1, $2, $3)
+                RETURNING *;
+        `, ["Starting Key", "With love from the Iglu team", hash])
+        if(!result.rows || result.rows.length ===  0){
+            throw new Error('Error whilst creating key')
+        }
+
+        const keyID = result.rows[0].id
+
         await this.db.query(`
-            INSERT INTO cache.keys (cache_id, name, description, hash) VALUES ($1, $2, $3, $4)
-        `, [cache, "Starting Key", "With love from the Iglu team", hash])
+            INSERT INTO cache.cache_key (cache_id, key_id) VALUES ($1, $2)
+        `, [cache, keyID])
     }
 
     public async getStoreNarInfo(cache:number, hash:string): Promise<storeNarInfo[]>{
