@@ -85,12 +85,21 @@ export default class Database {
             create table if not exists cache.keys
                 (
                 id serial constraint keys_pk primary key,
-                cache_id int constraint cache_fk references cache.caches,
                 name text not null,
                 hash text not null,
                 description text,
                 created_at timestamp default now() not null,
-                permissions text default 'none'
+                updated_at timestamp default now() not null
+            )
+        `)
+        await this.db.query(`
+            create table if not exists cache.cache_key 
+            (
+                id serial constraint cache_key_pk primary key,
+                cache_id int constraint cache_fk references cache.caches,
+                key_id int constraint keys_fk references cache.keys,
+                permissions text default 'none',
+                created_at timestamp default now() not null
             )
         `)
     }
@@ -246,7 +255,11 @@ export default class Database {
         }})
     }
     public async getAllowedKeys(cache:number):Promise<Array<string>> {
-        const caches = await this.db.query('SELECT array_agg(hash) as allowedKeys FROM cache.keys WHERE cache_id = $1 GROUP BY cache_id', [cache])
+        const caches = await this.db.query(`
+            SELECT array_agg(hash) as allowedKeys FROM cache.keys 
+                INNER JOIN cache.cache_key ck ON keys.id = ck.key_id
+            WHERE ck.cache_id = $1 GROUP BY ck.cache_id
+        `, [cache])
         return caches.rows[0].allowedkeys
     }
     public async appendApiKey(cache:number, key:string):Promise<void> {
