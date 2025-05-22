@@ -102,6 +102,25 @@ export default class Database {
                 created_at timestamp default now() not null
             )
         `)
+
+        await this.db.query(`
+            DROP TABLE IF EXISTS cache.server_config;
+            create table if not exists cache.server_config
+            (
+                id serial constraint server_config_pk primary key,
+                fs_storage_path text not null,
+                log_level text default 'info',
+                max_storage_size bigint,
+                cache_root_domain text
+            )
+        `)
+    }
+
+    public async insertServerSettings(fs_storage_path:string, log_level:string, max_storage_size:number, cache_root_domain:string):Promise<void>{
+        await this.db.query(`
+            INSERT INTO cache.server_config (fs_storage_path, log_level, max_storage_size, cache_root_domain) 
+            VALUES ($1, $2, $3, $4)
+        `, [fs_storage_path, log_level, max_storage_size, cache_root_domain])
     }
 
     public async getCaches():Promise<Array<cache>> {
