@@ -11,14 +11,15 @@ const app = require('express')()
 const pino = require('pino-http')()
 
 let envs = [
-  "CACHE_ROOT_DOMAIN",
-  "CACHE_JWT_SECRET",
-  "CACHE_FILESYSTEM_DIR",
-  "POSTGRES_DB",
-  "POSTGRES_USER",
-  "POSTGRES_HOST",
-  "POSTGRES_PASSWORD",
-  "POSTGRES_PORT"
+    "CACHE_ROOT_DOMAIN",
+    "CACHE_FILESYSTEM_DIR",
+    "CACHE_MAX_GB",
+    "POSTGRES_DB",
+    "POSTGRES_USER",
+    "POSTGRES_HOST",
+    "POSTGRES_PASSWORD",
+    "POSTGRES_PORT",
+    "LOG_LEVEL"
 ];
 
 envs.forEach(env => {
@@ -36,6 +37,7 @@ console.log("Database User:\t" + process.env.POSTGRES_USER)
 console.log("Database DB:\t" + process.env.POSTGRES_DB)
 console.log("Root Domain:\t" + process.env.CACHE_ROOT_DOMAIN)
 console.log("Filesystem Dir:\t" + process.env.CACHE_FILESYSTEM_DIR)
+console.log("Filesystem Max GB:\t" + process.env.CACHE_MAX_GB + ' GB')
 console.log("\n\n\n")
 
 let isReady = false
@@ -53,6 +55,15 @@ while(!isReady){
     }
 }
 await Database.setupDB();
+
+//Insert the default cache if it does not exist
+await Database.insertServerSettings(
+    process.env.CACHE_FILESYSTEM_DIR,
+    process.env.LOG_LEVEL,
+    process.env.CACHE_MAX_GB,
+    process.env.CACHE_ROOT_DOMAIN
+)
+
 await Database.getAllCaches().then(async (caches:Array<cacheWithKeys>)=>{
     if(caches.length === 0){
         //Create a default cache
