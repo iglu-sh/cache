@@ -64,8 +64,6 @@ await Database.insertServerSettings(
     process.env.CACHE_MAX_GB,
     process.env.CACHE_ROOT_DOMAIN
 )
-//Run migrations
-await migrate(Database);
 
 await Database.getAllCaches().then(async (caches:Array<cacheWithKeys>)=>{
     if(caches.length === 0){
@@ -74,6 +72,8 @@ await Database.getAllCaches().then(async (caches:Array<cacheWithKeys>)=>{
         await Database.createCache("default", "Read", true, "none", "XZ", `${process.env.CACHE_ROOT_DOMAIN}`)
     }
     caches = await Database.getAllCaches()
+    //Run migrations
+    await migrate(Database);
     for (const cache of caches) {
         //Updating CACHE_ROOT_DOMAIN if needed
         if(cache.uri != process.env.CACHE_ROOT_DOMAIN && process.env.AUTO_FIX_CACHE_ROOT_DOMAIN !== "false"){
@@ -84,15 +84,27 @@ await Database.getAllCaches().then(async (caches:Array<cacheWithKeys>)=>{
             const cacheKey = makeApiKey(cache.name)
             console.log(`Initial Key for cache ${cache.name}: ${cacheKey}`)
             try{
-                await Database.appendApiKey(cache.id, cacheKey)
+                let newHash = await Database.appendApiKey(cache.id, cacheKey)
+                //Add this key to the cache
+                cache.allowedKeys[0] = newHash
             }
             catch(e) {
                 console.error('Error whilst appening:', e)
                 return -1
             }
         }
+        //Check the public signing keys and "create" a default one
+        if(cache.publicSigningKeys.length === 0 || cache.publicSigningKeys[0] === null){
+            console.log(`No public signing keys found for cache ${cache.name} creating placeholder`)
+            //Get the first api key available in the database
+            const apiKey = cache.allowedKeys[0]
+            if(!apiKey) continue
+            console.log(`Using API key ${apiKey} to create a new public signing key`)
+            //Create a new public signing key
+            await Database.appendPublicKey(cache.id, "<empty>",  apiKey, true)
+        }
         //Show the public signing key for this cache
-        console.log(`Public signing keys for cache ${cache.name}: ${cache.publicSigningKeys}`)
+        console.log(`Public signing keys for cache ${cache.name}: ${cache.publicSigningKeys.map((key)=>key == "" ? "<empty>" : key).join(", ")}`)
     }
 })
 
@@ -139,6 +151,8 @@ for(const cache of await Database.getAllCaches()){
         }
     }
 }
+
+await Database.close()
 
 app.use(raw())
 

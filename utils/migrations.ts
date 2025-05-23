@@ -22,7 +22,6 @@ export async function migrate(db:Database){
                     INNER JOIN cache.cache_key ck on k.id = ck.key_id
                 WHERE ck.cache_id = $1
             `, [cache.id]).then((keys) => {return keys.rows});
-            console.log(keys)
             console.log('Public Signing key: ', cache.publicsigningkeys)
 
             //Move this to the new format
@@ -30,7 +29,7 @@ export async function migrate(db:Database){
                 INSERT INTO cache.public_signing_keys (name, key, description)
                 VALUES ($1, $2, $3)
                 RETURNING *
-            `, ["Migrated key", cache.publicsigningkeys, "Migrated auto-magically from an old cache format"])
+            `, ["Migrated key", cache.publicsigningkeys && cache.publicsigningkeys != "" ? cache.publicsigningkeys : "", "Migrated auto-magically from an old cache format"])
 
             //Combine the new key with the caches and api keys
             for(const key of keys){

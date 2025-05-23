@@ -34,7 +34,6 @@ export default class Database {
                         name TEXT,
                         permission TEXT,
                         preferredCompressionMethod TEXT,
-                        publicSigningKeys TEXT,
                         uri TEXT,
                         priority INTEGER DEFAULT 40
                     )
@@ -130,8 +129,9 @@ export default class Database {
                 cache_id int constraint signing__cache_fk references cache.caches,
                 key_id int constraint signing__keys_fk references cache.keys,
                 signing_key_id int constraint signing_key_fk references cache.public_signing_keys
-            )
+            );
         `)
+        console.log("Database setup complete")
     }
 
     public async insertServerSettings(fs_storage_path:string, log_level:string, max_storage_size:number, cache_root_domain:string):Promise<void>{
@@ -311,7 +311,7 @@ export default class Database {
         `, [cache])
         return caches.rows[0].allowedkeys
     }
-    public async appendApiKey(cache:number, key:string):Promise<void> {
+    public async appendApiKey(cache:number, key:string):Promise<string> {
         //Hash the key
         //TODO: Find out if we need a secret key here (I hope not)
         const hasher = new Bun.CryptoHasher("sha512");
@@ -330,6 +330,8 @@ export default class Database {
         await this.db.query(`
             INSERT INTO cache.cache_key (cache_id, key_id) VALUES ($1, $2)
         `, [cache, keyID])
+
+        return hash
     }
 
     public async getStoreNarInfo(cache:number, hash:string): Promise<storeNarInfo[]>{
@@ -381,42 +383,58 @@ export default class Database {
         await this.db.query('DELETE FROM cache.hashes WHERE id = $1', [id])
     }
 
-    public async appendPublicKey(id:number, key:string, apiKey:string):Promise<void>{
-        //Get the API key ID
+    public async appendPublicKey(id:number, key:string, apiKey:string, bypassHasher?:boolean):Promise<void>{
         const hashedKey = new Bun.CryptoHasher("sha512")
         hashedKey.update(apiKey)
-        const hash = hashedKey.digest("hex")
+        let hash = hashedKey.digest("hex")
+
+        //This is a workaround to be able to just pass a hash to the query later down the line
+        if(bypassHasher){
+            hash = apiKey
+        }
+
+        //Get the API key ID
         const keyID = await this.db.query(`
             SELECT * FROM cache.keys WHERE hash = $1;
         `, [hash]).then((res)=>{
             if(res.rows.length === 0){
-                throw new Error('Key not found')
+                throw new Error('API Key not found')
             }
             return res.rows[0].id
         })
-        //Check if the key already exists
         //Check if this key cache api key link already exists
-        await this.db.query(`
-                SELECT * FROM signing_key_cache_api_link WHERE cache_id = $1 AND key_id = $2
-            `, [id, key]).then((res)=>{
+        let publicKeyId;
+        const isInDb = await this.db.query(`
+                SELECT * FROM cache.signing_key_cache_api_link WHERE cache_id = $1 AND key_id = $2
+            `, [id, keyID]).then((res)=>{
             if(res.rows.length > 0){
-                throw new Error('Key is already inserted')
+                publicKeyId = res.rows[0].key_id
+                return true
             }
+            return false
         })
 
-        //Insert the key into the public signing keys table
-        const signingKey = await this.db.query(`
-            INSERT INTO cache.public_signing_keys (name, key, description) 
-            VALUES ($1, $2, $3)
-            RETURNING *
-        `, ["Cachix Key", key, "Key uploaded by Cachix"])
+        //Depending on the result we need to either update the key or insert a new one
+        if(isInDb){
+            //Update the key with the id we got
+            await this.db.query(`
+                UPDATE cache.public_signing_keys SET key = $1 WHERE id = $2
+            `, [key, publicKeyId])
+        }
+        else{
+            //Insert the key into the public signing keys table
+            const signingKey = await this.db.query(`
+                INSERT INTO cache.public_signing_keys (name, key, description) 
+                VALUES ($1, $2, $3)
+                RETURNING *
+            `, ["Cachix Key", key, "Key uploaded by Cachix"])
 
-        console.log('Inserting these values:', id, keyID, signingKey.rows[0].id)
-        //Insert the key into the signing key cache api link table
-        await this.db.query(`
-            INSERT INTO cache.signing_key_cache_api_link (cache_id, key_id, signing_key_id) 
-            VALUES ($1, $2, $3)
+            //Insert the key into the signing key cache api link table
+            await this.db.query(`
+                INSERT INTO cache.signing_key_cache_api_link (cache_id, key_id, signing_key_id) 
+                VALUES ($1, $2, $3)
         `, [id, keyID, signingKey.rows[0].id])
+        }
     }
 
     public async logRequest(hashID:number, cacheID:number, type:string):Promise<void>{
