@@ -408,7 +408,7 @@ export default class Database {
                 SELECT * FROM cache.signing_key_cache_api_link WHERE cache_id = $1 AND key_id = $2
             `, [id, keyID]).then((res)=>{
             if(res.rows.length > 0){
-                publicKeyId = res.rows[0].key_id
+                publicKeyId = res.rows[0].signing_key_id
                 return true
             }
             return false
