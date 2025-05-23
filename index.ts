@@ -7,6 +7,7 @@ import createRouter, {router} from "express-file-routing"
 import type {cache, cacheWithKeys} from "./utils/types.d/dbTypes.ts";
 import {makeApiKey} from "./utils/apiKeys.ts";
 import 'dotenv/config'
+import {migrate} from "./utils/migrations.ts";
 const app = require('express')()
 const pino = require('pino-http')()
 
@@ -63,6 +64,8 @@ await Database.insertServerSettings(
     process.env.CACHE_MAX_GB,
     process.env.CACHE_ROOT_DOMAIN
 )
+//Run migrations
+await migrate(Database);
 
 await Database.getAllCaches().then(async (caches:Array<cacheWithKeys>)=>{
     if(caches.length === 0){

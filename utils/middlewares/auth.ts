@@ -28,7 +28,6 @@ export async function isAuthenticated (req: any, res: any, next: any):Promise<bo
 
             //Check if the api key is allowed to push this cache
             const keys = await Database.getAllowedKeys(cacheID)
-
             if(keys.length === 0){
                 res.status(403).json({ message: 'Forbidden' });
                 return false
