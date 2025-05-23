@@ -211,8 +211,8 @@ export default class Database {
             const caches = await this.db.query(`
                 SELECT caches.*, array_agg(psk.key) as publicSigningKeys
                 FROM cache.caches
-                    INNER JOIN signing_key_cache_api_link skcal ON caches.id = skcal.cache_id
-                    INNER JOIN public_signing_keys psk ON skcal.signing_key_id = psk.id
+                    INNER JOIN cache.signing_key_cache_api_link skcal ON caches.id = skcal.cache_id
+                    INNER JOIN cache.public_signing_keys psk ON skcal.signing_key_id = psk.id
                 WHERE caches.id = $1
                 GROUP BY caches.id 
             `, [cache])
