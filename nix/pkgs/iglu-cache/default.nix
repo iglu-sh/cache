@@ -3,7 +3,7 @@
 buildBunApplication {
   src = ../../..;
 
-  nodeModuleHash = "sha256-yLSf11QbDZ09DXlAupAyhNBKDFRt4lA+Z2UH+bxaOrw=";
+  nodeModuleHash = "sha256-OHtkRHlMSCLJBUpxvEpeiDlPcLAJrudlL2aQY5RwFX8=";
 
   extraWrapScript = ''
     if [ -z "\$CACHE_ROOT_DOMAIN" ]; then
