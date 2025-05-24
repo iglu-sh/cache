@@ -2,6 +2,7 @@ import { type NextFunction, type Request, type Response } from 'express';
 import db from '../../utils/db.ts';
 export const get = async (req: Request, res: Response, next: NextFunction) => {
     console.log(req.url, req.method)
+    //TODO: Figure out what the nix client actually wants back from a HEAD request
     if (req.method === 'HEAD'){
         return res.status(200).send('OK');
     }

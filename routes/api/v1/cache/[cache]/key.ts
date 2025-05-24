@@ -16,10 +16,9 @@ export const post = [
                 error: 'Missing cache name',
             })
         }
-        console.log(req.body, req.headers.authorization)
         //Check if the request is authenticated
         const auth = await isAuthenticated(req, res, next)
-        if(!auth){
+        if(!auth || !req.headers.authorization){
             return;
         }
 
@@ -41,7 +40,7 @@ export const post = [
         }
         const publicKey = req.body.publicKey;
         try{
-            await Database.appendPublicKey(cacheID, publicKey);
+            await Database.appendPublicKey(cacheID, publicKey, req.headers.authorization.split(" ")[1] as string);
             res.status(200).json({
                 message: 'Public key added successfully',
             })
@@ -54,6 +53,5 @@ export const post = [
         }
 
         await Database.close()
-        console.log(req.body);
     }
 ]
