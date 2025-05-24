@@ -1,31 +1,38 @@
 import { Client } from 'pg';
 import type {cache, cacheWithKeys, storeNarInfo} from "./types.d/dbTypes.ts";
 import type {CacheInfo, narUploadSuccessRequestBody} from "./types.d/apiTypes.ts";
+import { PGlite } from '@electric-sql/pglite'
+
 export default class Database {
     
-    private db:Client = new Client({
+    private static db:Client | PGlite = !process.env.PG_MODE && process.env.PG_MODE != 'lite' ? new Client({
       user: process.env.POSTGRES_USER,
       password: process.env.POSTGRES_PASSWORD,
       host: process.env.POSTGRES_HOST,
       port: process.env.POSTGRES_PORT,
       database: process.env.POSTGRES_DB,
-    })
+    }) : new PGlite("/tmp/pg_data")
     
     constructor(skipConnection:boolean = false){
         if(!skipConnection){
-            this.db.connect()
+            //Database.db.connect()
         }
     }
     public async connect(){
         console.log(`Connecting to the database`)
-        await this.db.connect()
+        if(!process.env.PG_MODE || process.env.PG_MODE != 'lite'){
+            await Database.db.connect()
+        }
+        else{
+            console.log(`Using PGlite so not connecting`)
+        }
         console.log(`Connected to the database`)
     }
     public async setupDB():Promise<void>{
-        await this.db.query(`
+        await Database.db.query(`
                 CREATE SCHEMA IF NOT EXISTS cache
             `)
-        await this.db.query(`
+        await Database.db.query(`
                 CREATE TABLE IF NOT EXISTS cache.caches 
                     (
                         id SERIAL PRIMARY KEY,
@@ -39,7 +46,7 @@ export default class Database {
                     )
             `)
 
-        await this.db.query(`
+        await Database.db.query(`
                 create table IF NOT EXISTS cache.hashes(
                     id      SERIAL                    not null
                         constraint hashes_pk
@@ -63,7 +70,7 @@ export default class Database {
                 );
             `)
 
-        await this.db.query(`
+        await Database.db.query(`
             create table if not exists cache.request
             (
                 id       bigserial
@@ -80,7 +87,7 @@ export default class Database {
             );
         `)
 
-        await this.db.query(`
+        await Database.db.query(`
             create table if not exists cache.keys
                 (
                 id serial constraint keys_pk primary key,
@@ -91,7 +98,7 @@ export default class Database {
                 updated_at timestamp default now() not null
             )
         `)
-        await this.db.query(`
+        await Database.db.query(`
             create table if not exists cache.cache_key 
             (
                 id serial constraint cache_key_pk primary key,
@@ -101,9 +108,10 @@ export default class Database {
                 created_at timestamp default now() not null
             )
         `)
-
-        await this.db.query(`
+        await Database.db.query(`
             DROP TABLE IF EXISTS cache.server_config;
+        `)
+        await Database.db.query(`
             create table if not exists cache.server_config
             (
                 id serial constraint server_config_pk primary key,
@@ -114,7 +122,7 @@ export default class Database {
             )
         `)
 
-        await this.db.query(`
+        await Database.db.query(`
             create table if not exists cache.public_signing_keys
                 (
                 id serial constraint signing_keys_pk primary key,
@@ -123,8 +131,10 @@ export default class Database {
                 description text,
                 created_at timestamp default now() not null
             );
+        `)
+        await Database.db.query(`
             create table if not exists cache.signing_key_cache_api_link
-                (
+            (
                 id serial constraint signing_api_cache_pk primary key,
                 cache_id int constraint signing__cache_fk references cache.caches,
                 key_id int constraint signing__keys_fk references cache.keys,
@@ -135,7 +145,7 @@ export default class Database {
     }
 
     public async insertServerSettings(fs_storage_path:string, log_level:string, max_storage_size:number, cache_root_domain:string):Promise<void>{
-        await this.db.query(`
+        await Database.db.query(`
             INSERT INTO cache.server_config (fs_storage_path, log_level, max_storage_size, cache_root_domain) 
             VALUES ($1, $2, $3, $4)
         `, [fs_storage_path, log_level, max_storage_size, cache_root_domain])
@@ -143,7 +153,7 @@ export default class Database {
 
     public async getCaches():Promise<Array<cache>> {
         try{
-            const caches = await this.db.query('SELECT * FROM cache.caches')
+            const caches = await Database.db.query('SELECT * FROM cache.caches')
             return caches.rows
         }
         catch(e){
@@ -160,7 +170,7 @@ export default class Database {
         }
 
 
-        await this.db.query(`
+        await Database.db.query(`
             INSERT INTO cache.hashes 
                 (path, cache, cderiver, cfilehash, cfilesize, cnarhash, cnarsize, creferences, csig, cstorehash, cstoresuffix, parts, compression)
             VALUES 
@@ -190,7 +200,7 @@ export default class Database {
 
     public async getCacheID(cache:string):Promise<number> {
         try{
-            const caches = await this.db.query('SELECT id FROM cache.caches WHERE name = $1', [cache])
+            const caches = await Database.db.query('SELECT id FROM cache.caches WHERE name = $1', [cache])
             if(caches.rows.length === 0){
                 return -1
             }
@@ -208,7 +218,7 @@ export default class Database {
 
     public async getCacheInfo(cache:number):Promise<CacheInfo>{
         try{
-            const caches = await this.db.query(`
+            const caches = await Database.db.query(`
                 SELECT caches.*, array_agg(psk.key) as publicSigningKeys
                 FROM cache.caches
                     INNER JOIN cache.signing_key_cache_api_link skcal ON caches.id = skcal.cache_id
@@ -249,7 +259,7 @@ export default class Database {
 
     public async getNarInfo(cache:string, hash:string):Promise<Array<string>>{
         try{
-            const narInfo = await this.db.query('SELECT * FROM cache.hashes WHERE cache = $1 AND cStoreHash IN ($2)', [cache, hash])
+            const narInfo = await Database.db.query('SELECT * FROM cache.hashes WHERE cache = $1 AND cStoreHash IN ($2)', [cache, hash])
             return []
         }
         catch(e){
@@ -265,9 +275,9 @@ export default class Database {
         }
         //Select all the paths that are in the database based on the paths given to use by the calling function
         //TODO: This is not safe, we should use a parameterized query
-        const pathsInDB = await this.db.query(`
-            SELECT cstorehash FROM cache.hashes WHERE cache = $1 AND cstorehash IN ('${paths.join("','")}')
-        `, [cacheID])
+        const pathsInDB = await Database.db.query(`
+            SELECT cstorehash FROM cache.hashes WHERE cache = $1 AND cstorehash = ANY($2)
+        `, [cacheID, paths])
 
         //Return only the cstore hashes
         return pathsInDB.rows.map((row)=>{return row.cstorehash})
@@ -275,11 +285,11 @@ export default class Database {
     }
 
     public async close():Promise<void> {
-        return await this.db.end();
+        //return await Database.db.end();
     }
 
     public async getAllCaches():Promise<Array<cacheWithKeys>> {
-        const caches = await this.db.query(`
+        const caches = await Database.db.query(`
             SELECT c.*, array_agg(k.hash) as allowedKeys, array_agg(psk.key) as publicsigningkeys FROM cache.caches c
               LEFT JOIN cache.cache_key ck ON c.id = ck.cache_id
               LEFT JOIN cache.keys k ON ck.key_id = k.id
@@ -304,7 +314,7 @@ export default class Database {
         }})
     }
     public async getAllowedKeys(cache:number):Promise<Array<string>> {
-        const caches = await this.db.query(`
+        const caches = await Database.db.query(`
             SELECT array_agg(hash) as allowedKeys FROM cache.keys 
                 INNER JOIN cache.cache_key ck ON keys.id = ck.key_id
             WHERE ck.cache_id = $1 GROUP BY ck.cache_id
@@ -317,7 +327,7 @@ export default class Database {
         const hasher = new Bun.CryptoHasher("sha512");
         hasher.update(key)
         const hash = hasher.digest("hex")
-        const result = await this.db.query(`
+        const result = await Database.db.query(`
             INSERT INTO cache.keys (name, description, hash) VALUES ($1, $2, $3)
                 RETURNING *;
         `, ["Starting Key", "With love from the Iglu team", hash])
@@ -327,7 +337,7 @@ export default class Database {
 
         const keyID = result.rows[0].id
 
-        await this.db.query(`
+        await Database.db.query(`
             INSERT INTO cache.cache_key (cache_id, key_id) VALUES ($1, $2)
         `, [cache, keyID])
 
@@ -335,7 +345,7 @@ export default class Database {
     }
 
     public async getStoreNarInfo(cache:number, hash:string): Promise<storeNarInfo[]>{
-        const hashResults = await this.db.query('SELECT * FROM cache.hashes WHERE cache = $1 AND cstorehash = $2', [cache, hash])
+        const hashResults = await Database.db.query('SELECT * FROM cache.hashes WHERE cache = $1 AND cstorehash = $2', [cache, hash])
         return hashResults.rows.map((row)=>{
             return {
                 id: row.id,
@@ -361,7 +371,7 @@ export default class Database {
         cache:number,
         path: string
     }>{
-        const hashResults = await this.db.query('SELECT id, path, cache FROM cache.hashes WHERE cache = $1 AND cstorehash = $2', [cache, derivation])
+        const hashResults = await Database.db.query('SELECT id, path, cache FROM cache.hashes WHERE cache = $1 AND cstorehash = $2', [cache, derivation])
         if(hashResults.rows.length === 0){
             throw new Error('Derivation not found')
         }
@@ -369,18 +379,18 @@ export default class Database {
     }
 
     public async createCache(name:string, permission:string, isPublic:boolean, githubUsername:string, preferredCompressionMethod:string, uri:string):Promise<void>{
-        await this.db.query(`
+        await Database.db.query(`
             INSERT INTO cache.caches (name, permission, isPublic, githubUsername, preferredCompressionMethod, uri) 
             VALUES ($1, $2, $3, $4, $5, $6)
         `, [name, permission, isPublic, githubUsername, preferredCompressionMethod, uri])
     }
 
     public getDirectAccess():Client{
-        return this.db
+        return Database.db
     }
 
     public async deletePath(id:number):Promise<void>{
-        await this.db.query('DELETE FROM cache.hashes WHERE id = $1', [id])
+        await Database.db.query('DELETE FROM cache.hashes WHERE id = $1', [id])
     }
 
     public async appendPublicKey(id:number, key:string, apiKey:string, bypassHasher?:boolean):Promise<void>{
@@ -394,7 +404,7 @@ export default class Database {
         }
 
         //Get the API key ID
-        const keyID = await this.db.query(`
+        const keyID = await Database.db.query(`
             SELECT * FROM cache.keys WHERE hash = $1;
         `, [hash]).then((res)=>{
             if(res.rows.length === 0){
@@ -404,7 +414,7 @@ export default class Database {
         })
         //Check if this key cache api key link already exists
         let publicKeyId;
-        const isInDb = await this.db.query(`
+        const isInDb = await Database.db.query(`
                 SELECT * FROM cache.signing_key_cache_api_link WHERE cache_id = $1 AND key_id = $2
             `, [id, keyID]).then((res)=>{
             if(res.rows.length > 0){
@@ -417,20 +427,20 @@ export default class Database {
         //Depending on the result we need to either update the key or insert a new one
         if(isInDb){
             //Update the key with the id we got
-            await this.db.query(`
+            await Database.db.query(`
                 UPDATE cache.public_signing_keys SET key = $1 WHERE id = $2
             `, [key, publicKeyId])
         }
         else{
             //Insert the key into the public signing keys table
-            const signingKey = await this.db.query(`
+            const signingKey = await Database.db.query(`
                 INSERT INTO cache.public_signing_keys (name, key, description) 
                 VALUES ($1, $2, $3)
                 RETURNING *
             `, ["Cachix Key", key, "Key uploaded by Cachix"])
 
             //Insert the key into the signing key cache api link table
-            await this.db.query(`
+            await Database.db.query(`
                 INSERT INTO cache.signing_key_cache_api_link (cache_id, key_id, signing_key_id) 
                 VALUES ($1, $2, $3)
         `, [id, keyID, signingKey.rows[0].id])
@@ -438,13 +448,13 @@ export default class Database {
     }
 
     public async logRequest(hashID:number, cacheID:number, type:string):Promise<void>{
-        await this.db.query(`
+        await Database.db.query(`
             INSERT INTO cache.request (hash, cache_id, type) VALUES($1, $2, $3)
         `,[hashID, cacheID, type])
     }
 
     public async updateCacheURI(uri:string, cacheID:number):Promise<void>{
-      await this.db.query(`
+      await Database.db.query(`
           UPDATE cache.caches SET uri = $1 WHERE id = $2
       `, [uri, cacheID])
     }
