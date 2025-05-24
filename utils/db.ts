@@ -5,17 +5,21 @@ import { PGlite } from '@electric-sql/pglite'
 
 export default class Database {
     
-    private static db:Client | PGlite = !process.env.PG_MODE && process.env.PG_MODE != 'lite' ? new Client({
-      user: process.env.POSTGRES_USER,
-      password: process.env.POSTGRES_PASSWORD,
-      host: process.env.POSTGRES_HOST,
-      port: process.env.POSTGRES_PORT,
-      database: process.env.POSTGRES_DB,
-    }) : new PGlite("/tmp/pg_data")
+    private static db:Client | PGlite;
     
-    constructor(skipConnection:boolean = false){
-        if(!skipConnection){
-            //Database.db.connect()
+    constructor(){
+        if(!process.env.PG_MODE || process.env.PG_MODE != 'lite'){
+            console.log('Using PostgreSQL as the database')
+            Database.db = new Client({
+                user: process.env.POSTGRES_USER,
+                password: process.env.POSTGRES_PASSWORD,
+                host: process.env.POSTGRES_HOST,
+                port: process.env.POSTGRES_PORT,
+                database: process.env.POSTGRES_DB,
+            });
+        }
+        else{
+            Database.db = new PGlite("/tmp/pg_data")
         }
     }
     public async connect(){
