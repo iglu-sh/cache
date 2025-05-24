@@ -8,6 +8,9 @@ export default class Database {
     private static db:Client | PGlite;
     
     constructor(){
+
+        if(Database.db) return
+
         if(!process.env.PG_MODE || process.env.PG_MODE != 'lite'){
             console.log('Using PostgreSQL as the database')
             Database.db = new Client({
