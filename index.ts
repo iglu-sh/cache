@@ -80,7 +80,7 @@ await Database.getAllCaches().then(async (caches:Array<cacheWithKeys>)=>{
           console.log("Updating CACHE_ROOT_DOMAIN for cache \"" + cache.name + "\"")
           await Database.updateCacheURI(process.env.CACHE_ROOT_DOMAIN, cache.id)
         }
-        if(cache.allowedKeys.length === 0 || cache.allowedKeys[0] === null){
+        if(cache.allowedKeys.length === 0 || cache.allowedKeys[0] === null || cache.allowedKeys[0] === "NULL"){
             const cacheKey = makeApiKey(cache.name)
             console.log(`Initial Key for cache ${cache.name}: ${cacheKey}`)
             try{
