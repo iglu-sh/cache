@@ -276,8 +276,8 @@ export default class Database {
         //Select all the paths that are in the database based on the paths given to use by the calling function
         //TODO: This is not safe, we should use a parameterized query
         const pathsInDB = await Database.db.query(`
-            SELECT cstorehash FROM cache.hashes WHERE cache = $1 AND cstorehash IN ('${paths.join("','")}')
-        `, [cacheID])
+            SELECT cstorehash FROM cache.hashes WHERE cache = $1 AND cstorehash = ANY($2)
+        `, [cacheID, paths])
 
         //Return only the cstore hashes
         return pathsInDB.rows.map((row)=>{return row.cstorehash})
