@@ -179,7 +179,7 @@ export default class Database {
         await Database.db.query(`
             create table if not exists cache.builder_runs
             (
-                id serial constraint server_runs primary key,
+                id serial constraint builder_runs_pk primary key,
                 builder_id int constraint builder_fk references cache.builders,
                 status text not null,
                 time timestamp default now() not null,
