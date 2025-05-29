@@ -21,8 +21,7 @@ let envs = [
     "POSTGRES_USER",
     "POSTGRES_HOST",
     "POSTGRES_PASSWORD",
-    "POSTGRES_PORT",
-    "LOG_LEVEL"
+    "POSTGRES_PORT"
 ];
 
 envs.forEach(env => {
@@ -37,7 +36,10 @@ const logger = new Logger()
 logger.setJsonLogging(!!(process.env.JSON_LOGGING && process.env.JSON_LOGGING.toLowerCase() === 'true'))
 
 //Default to info if the LOG_LEVEL is not set or invalid
-//@ts-ignore
+if(!process.env.LOG_LEVEL){
+    process.env.LOG_LEVEL = "INFO"
+}
+
 if(!["DEBUG", "INFO", "WARN", "ERROR"].includes(process.env.LOG_LEVEL.toUpperCase() as string)){
     process.env.LOG_LEVEL = "INFO"
 }
