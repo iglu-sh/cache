@@ -1,4 +1,6 @@
 # Iglu Cache
+[![Build Image and upload to ghcr](https://github.com/iglu-sh/cache/actions/workflows/build-docker.yml/badge.svg)](https://github.com/iglu-sh/cache/actions/workflows/build-docker.yml)
+[![CodeQL](https://github.com/iglu-sh/cache/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/iglu-sh/cache/actions/workflows/github-code-scanning/codeql)
 The cache component of the iglu project. It's a simple nix cache implementation that takes files via the cachix client and stores them in the filesystem.
 To install dependencies:
 
