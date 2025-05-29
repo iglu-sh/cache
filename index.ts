@@ -108,7 +108,7 @@ await Database.getAllCaches().then(async (caches:Array<cacheWithKeys>)=>{
                 cache.allowedKeys[0] = newHash
             }
             catch(e) {
-                Logger.error(`Error whilst appening: ${e}`)
+                Logger.error(`Error whilst appending: ${e}`)
                 return -1
             }
         }
