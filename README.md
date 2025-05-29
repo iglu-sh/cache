@@ -73,14 +73,14 @@ Now edit your cachix config (usually `~/.config/cachix/cachix.dhall`) and change
 ```
 Before you start pushing paths to the cache, you need to create a public-private key pair for cachix. You can do this by running:
 ```bash
-cachix generate-keypiar  <your_cache_name_usually_just_default>
+cachix generate-keypair  <your_cache_name_usually_just_default>
 ```
 > [!Note]
 > It may be necessary to first run `export CACHIX_SIGNING_KEY=<yoursigningkey>` to ensure that the cachix client uses the correct signing key for your cache. Usually cachix will also give you this command after you generated the key pair.
  
 This will create a public and private key in your cachix config directory. You can now push paths to the cache using the cachix client:
 ```bash
-nix build my-derivation | cachix push default
+nix build my-derivation | cachix push <default_or_your_cache_name>
 ```
 
 
