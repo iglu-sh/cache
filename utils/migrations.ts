@@ -2,14 +2,16 @@
 
 
 import type Database from "./db.ts";
+import {Logger} from "./logger.ts";
 
 export async function migrate(db:Database){
 
     const caches = await db.getDirectAccess().query(`
         SELECT * FROM cache.caches
     `).then((caches) => {return caches.rows});
+    const log = new Logger()
     if(!caches || caches.length == 0){
-        console.log("Skipping migrations because no caches in db.")
+        log.debug('Skipping migrations because no caches in db.')
         return;
     }
     //Public Signing keys in cache to new format
@@ -22,7 +24,7 @@ export async function migrate(db:Database){
                     INNER JOIN cache.cache_key ck on k.id = ck.key_id
                 WHERE ck.cache_id = $1
             `, [cache.id]).then((keys) => {return keys.rows});
-            console.log('Public Signing key: ', cache.publicsigningkeys)
+            log.debug(`Migrated ${keys.length} keys in cache ${cache.id} (${cache.name})`);
 
             //Move this to the new format
             const id = await db.getDirectAccess().query(`
@@ -46,6 +48,6 @@ export async function migrate(db:Database){
                 DROP COLUMN publicsigningkeys
         `)
 
-        console.log('Done with Migration: Public signing keys')
+        log.debug('Done with Migration: Public signing keys')
     }
 }

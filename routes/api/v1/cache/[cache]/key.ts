@@ -2,6 +2,7 @@
 import bodyParser, {type NextFunction, type Request, type Response} from "express";
 import {isAuthenticated} from "../../../../../utils/middlewares/auth.ts";
 import db from "../../../../../utils/db.ts";
+import {Logger} from "../../../../../utils/logger.ts";
 export const post = [
     bodyParser.json(),
     async (req: Request, res: Response, next: NextFunction) => {
@@ -24,7 +25,7 @@ export const post = [
 
         //Check if the request has a publicKey
         if(!req.body.publicKey){
-            console.error('Missing publicKey object')
+            Logger.debug('Missing publicKey object')
             return res.status(400).json({
                 error: 'Missing publicKey object',
             })
@@ -46,7 +47,7 @@ export const post = [
             })
         }
         catch(e){
-            console.error(e);
+            Logger.error(`Error adding public key: ${e}`);
             res.status(500).json({
                 error: 'Internal Server Error',
             })

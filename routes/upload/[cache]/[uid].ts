@@ -1,6 +1,7 @@
 import type {Request, Response} from "express";
 import md5File from 'md5-file'
 import fs from 'fs'
+import {Logger} from "../../../utils/logger.ts";
 import {isAuthenticated} from "../../../utils/middlewares/auth.ts";
 function reqWasAborted(req:Request){
     return req.socket.destroyed || req.socket.readableEnded || req.socket.writableEnded
@@ -28,13 +29,13 @@ export const put = async (req:Request, res:Response)=>{
 
     //Check if the request has a md5 hash
     if(!req.query.md5){
-        console.error('Missing md5 hash')
+        Logger.error(`Upload request to ${req.params.cache}/${req.params.uid} is missing md5 hash`)
         return res.status(400).json({
             error: 'Missing md5 hash',
         })
     }
     if(!req.query.part){
-        console.error('Missing part number')
+        Logger.error('Missing part number')
         return res.status(400).json({
             error: 'Missing part number',
         })
@@ -45,8 +46,9 @@ export const put = async (req:Request, res:Response)=>{
     }
 
     //Check the compression of the nar
+    //TODO: Add brotli support
     if(!req.params.uid || req.params.uid[0] !== '0' && req.params.uid[0] !== '1'){
-        console.error('Invalid uid, expected 0 or 1 as first character')
+        Logger.error('Invalid uid, expected 0 or 1 as first character')
         return res.status(400).json({
             error: 'Invalid uid',
         })
@@ -66,19 +68,19 @@ export const put = async (req:Request, res:Response)=>{
     //Handle the finish on the write stream
     writeStream.on("finish", async ()=>{
         if(reqWasAborted(req)){
-            console.error('Request was aborted')
+            Logger.error('Upload Request was aborted')
             fs.unlinkSync(filePath)
             return res.status(400).json({
                 error: 'Request was aborted',
             })
         }
-        //TODO: Implement hash check
+
         res.status(200).send('OK')
     })
 
     //Handle errors on the write stream
     writeStream.on('error', (e)=>{
-        console.error(e)
+        Logger.error(`Error writing part file to disk ${e}`)
         res.status(500).json({
             error: 'Internal server error',
         })

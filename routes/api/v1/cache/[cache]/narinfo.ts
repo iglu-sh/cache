@@ -10,7 +10,7 @@ export const post = [
             res.status(405).send('Method Not Allowed');
             return;
         }
-        console.log(req.url)
+
         //Check if the user is authenticated
         const auth = await isAuthenticated(req, res, async () => {
             return true
@@ -31,18 +31,17 @@ export const post = [
         //Validate if the body is valid (i.e it is a JSON Array of only strings)
         req.body.map((x: any) => {
             if(typeof x !== 'string'){
-                console.error('WRONG', x)
+                res.status(400).send('Invalid Body');
+                return;
             }
         })
 
         if(!Array.isArray(req.body) || req.body.map((x: any)=> typeof x === 'string').includes(false)){
             res.status(400).send('Invalid Body');
-            await Database.close()
             return;
         }
 
         const pathsInDB = await Database.getAvailablePaths(req.params.cache, req.body)
-        await Database.close();
 
         //Build a new Array with the paths that are not in the database
         const pathsNotInDB = req.body.filter((x: string) => !pathsInDB.includes(x))

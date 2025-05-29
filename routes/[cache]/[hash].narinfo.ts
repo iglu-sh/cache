@@ -1,7 +1,26 @@
+/*
+* This file reports the narinfo of a given hash in a given cache.
+* It is used by the nix client to fetch the narinfo of a store path and has to be in this format:
+* ```text
+* StorePath: /nix/store/<hash>-<suffix>
+* URL: nar/<hash>
+* Compression: <compression>
+* FileHash: sha256:<filehash>
+* FileSize: <filesize>
+* NarHash: <narhash>
+* NarSize: <narsize>
+* References: <references>
+* Deriver: <deriver>
+* Sig: <cache name>:<sig>
+* ```
+* (Although the sig part can work without the cache name, it is recommended to include it)
+* */
+
 import { type NextFunction, type Request, type Response } from 'express';
 import db from '../../utils/db.ts';
+import {Logger} from "../../utils/logger.ts";
 export const get = async (req: Request, res: Response, next: NextFunction) => {
-    console.log(req.url, req.method)
+
     //TODO: Figure out what the nix client actually wants back from a HEAD request
     if (req.method === 'HEAD'){
         return res.status(200).send('OK');
@@ -29,6 +48,8 @@ export const get = async (req: Request, res: Response, next: NextFunction) => {
             });
         }
         const cache = await Database.getCacheInfo(cacheID);
+
+        //TODO: Implement private caches
         if(!cache.isPublic){
             return res.status(400).json({
                 error: "Cache not allowed"
@@ -38,11 +59,12 @@ export const get = async (req: Request, res: Response, next: NextFunction) => {
         //Check if the requested hash is in this cache
         const storeNar = await Database.getStoreNarInfo(cacheID, req.params.hash as string);
         if(storeNar.length === 0 || !storeNar[0]){
-            console.log(`Store nar ${req.params.hash} not cached`)
+            Logger.debug(`Store nar ${req.params.hash} not found in cache ${req.params.cache} (cache miss)`);
             const headers = new Headers()
             headers.append("content-type", "text/plain")
             return res.status(404).send("404")
         }
+
         //Build the nar info and send it to the client
         const narInfo = `StorePath: /nix/store/${storeNar[0].cstorehash}-${storeNar[0].cstoresuffix}
 URL: nar/${storeNar[0].cstorehash}
@@ -55,7 +77,6 @@ References: ${storeNar[0].creferences.join(" ")}
 Deriver: ${storeNar[0].cderiver}
 Sig: ${cache.name}:${storeNar[0].csig}
 `
-
         const headers = new Headers()
         headers.append("content-type", "text/x-nix-narinfo")
         res.setHeaders(headers)
@@ -65,7 +86,7 @@ Sig: ${cache.name}:${storeNar[0].csig}
         await Database.close()
     })
         .catch(e => {
-            console.log(e)
+            Logger.error(`Error while fetching narinfo for ${req.params.hash} in cache ${req.params.cache}: ${e}`);
             return res.status(500).json({
                 error: "Internal server error",
             });

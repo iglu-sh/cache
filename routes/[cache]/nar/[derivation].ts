@@ -1,10 +1,16 @@
+/*
+* This file downloads a Nix derivation from the cache.
+* It is used by the Nix package manager to download derivations.
+* */
+
 import bodyParser, {type NextFunction, type Request, type Response} from "express";
 import db from "../../../utils/db.ts";
 import fs from "fs";
+import {Logger} from "../../../utils/logger.ts";
+
 export const get = [
     bodyParser.json(),
     async (req: Request, res: Response, next: NextFunction) => {
-        console.log('GET', req.url)
         if(req.method !== 'GET'){
             return res.status(405).json({
                 error: 'Method not allowed',
@@ -15,11 +21,12 @@ export const get = [
                 error: 'Missing cache name or hash',
             })
         }
+
         // Return the cacheInfo
         const nixDerivationHash = req.params.derivation
         const cache = req.params.cache
         const Database = new db();
-        //console.log(nixDerivationHash, req.url)
+
         async function wrap(){
            const cacheID = await Database.getCacheID(cache)
             if(!cacheID){
@@ -44,13 +51,14 @@ export const get = [
                 filePath = await Database.getDerivation(cacheID, nixDerivationHash)
             }
             catch(e){
-                console.log(`Derivation ${nixDerivationHash} not found`)
+                Logger.debug(`Derivation ${nixDerivationHash} not found in cache ${cacheID}`)
+
                 return res.status(404).json({
                     error: 'Derivation not found',
                 })
             }
             if(!filePath || filePath.id === -1 || filePath.cache === -1){
-                console.log(`Derivation ${nixDerivationHash} not found`)
+                Logger.debug(`Derivation ${nixDerivationHash} not found in cache ${cacheID}`)
                 return res.status(404).json({
                     error: 'Derivation not found',
                 })
@@ -64,14 +72,14 @@ export const get = [
             }
             res.status(200).sendFile(filePath.path, (err)=>{
                 if(err){
-                    console.error(err)
+                    Logger.error(`Error while sending file: ${err}`)
                     return res.status(500).json({
                         error: 'Internal server error',
                     })
                 }
             })
             await Database.logRequest(filePath.id, filePath.cache, 'outbound')
-            console.log(`Sent ${nixDerivationHash} to ${req.ip}`)
+            Logger.debug(`Sent derivation ${nixDerivationHash} from cache ${cacheID} to ${req.ip}`)
             return
         }
 
@@ -80,8 +88,7 @@ export const get = [
             return
         })
         .catch(async (err) => {
-            console.error(err)
-            await Database.close()
+            Logger.error(`Error while sending file: ${err}`)
             return res.status(500).json({
                 error: 'Internal server error',
             })

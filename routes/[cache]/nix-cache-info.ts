@@ -1,12 +1,22 @@
+/*
+* This file returns the Nix cache info for a given cache.
+* It has to be in this format:
+* ```text
+* StoreDir: /nix/store
+* WantMassQuery: 1
+* Priority: <priority>
+* ```
+* */
+
 import db from "../../utils/db";
 import type { Request, Response } from "express";
+import {Logger} from "../../utils/logger.ts";
 export const get = [
     async (req: Request, res: Response) => {
         if(req.method !== 'GET'){
             res.status(405).send('Method Not Allowed');
             return;
         }
-        console.log(req.url)
 
         const cacheName = req.params.cache as string;
         if(!cacheName){
@@ -39,17 +49,12 @@ Priority: ${cacheInfo.priority}
 `)
         }
 
-        await wrap().then(async ()=>{
-            return
-        })
+        await wrap()
             .catch((err)=>{
-                console.log(err)
+                Logger.error(`Error while getting cache info ${err}`)
                 res.status(500).json({
                     error: 'Internal Server Error',
                 })
-            })
-            .finally(async ()=>{
-                await Database.close()
             })
     }
 ]
