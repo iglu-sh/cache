@@ -2,17 +2,16 @@ import { Client } from 'pg';
 import type {cache, cacheWithKeys, storeNarInfo} from "./types.d/dbTypes.ts";
 import type {CacheInfo, narUploadSuccessRequestBody} from "./types.d/apiTypes.ts";
 import { PGlite } from '@electric-sql/pglite'
+import {Logger} from "./logger.ts";
 
 export default class Database {
     
-    private static db:Client | PGlite;
-    
+    private static db?:Client | PGlite;
     constructor(){
-
+        //Skip the constructor if the database is already initialized
         if(Database.db) return
-
         if(!process.env.PG_MODE || process.env.PG_MODE != 'lite'){
-            console.log('Using PostgreSQL as the database')
+            Logger.info('Using PostgreSQL as the database')
             Database.db = new Client({
                 user: process.env.POSTGRES_USER,
                 password: process.env.POSTGRES_PASSWORD,
@@ -22,18 +21,29 @@ export default class Database {
             });
         }
         else{
+            Logger.info('Using PGlite as the database')
             Database.db = new PGlite("/tmp/pg_data")
         }
     }
+    public async destroy():Promise<void>{
+        Logger.info('Destroying database')
+        if(!process.env.PG_MODE || process.env.PG_MODE != 'lite'){
+            await Database.db.end()
+            delete Database.db
+        }
+        else{
+            Logger.info('Using PGlite so not destroying')
+        }
+    }
     public async connect(){
-        console.log(`Connecting to the database`)
+        Logger.info('Connecting to DB')
         if(!process.env.PG_MODE || process.env.PG_MODE != 'lite'){
             await Database.db.connect()
         }
         else{
-            console.log(`Using PGlite so not connecting`)
+            Logger.info('Using PGlite so not connecting')
         }
-        console.log(`Connected to the database`)
+        Logger.info('Connected to the Database')
     }
     public async setupDB():Promise<void>{
         await Database.db.query(`
@@ -188,7 +198,7 @@ export default class Database {
                 log text
             )
         `)
-        console.log("Database setup complete")
+        Logger.info('Database setup complete')
     }
 
     public async insertServerSettings(fs_storage_path:string, log_level:string, max_storage_size:number, cache_root_domain:string):Promise<void>{
@@ -204,7 +214,7 @@ export default class Database {
             return caches.rows
         }
         catch(e){
-            console.error('Error whilst getting caches:', e)
+            Logger.error(`Error whilst getting caches: ${e}`)
             return []
         }
     }
@@ -252,13 +262,13 @@ export default class Database {
                 return -1
             }
             else if(caches.rows.length > 1){
-                console.error('Multiple caches with the same name found:', caches.rows)
+                Logger.error('Multiple caches with the same name found:', caches.rows)
                 return -1
             }
             return caches.rows[0].id
         }
         catch(e){
-            console.error('Error whilst getting cache ID:', e)
+            Logger.error('Error whilst getting cache ID:', e)
             return -1
         }
     }
@@ -290,7 +300,7 @@ export default class Database {
 
         }
         catch(e){
-            console.error('Error whilst getting cache info:', e)
+            Logger.error('Error whilst getting cache info:', e)
             return {
                 githubUsername: '',
                 isPublic: true,
@@ -310,7 +320,7 @@ export default class Database {
             return []
         }
         catch(e){
-            console.error('Error whilst getting hash:', e)
+            Logger.error('Error whilst getting hash:', e)
             return []
         }
     }
@@ -320,8 +330,8 @@ export default class Database {
         if(cacheID === -1){
             throw new Error(`Cache ${cache} not found`)
         }
+
         //Select all the paths that are in the database based on the paths given to use by the calling function
-        //TODO: This is not safe, we should use a parameterized query
         const pathsInDB = await Database.db.query(`
             SELECT cstorehash FROM cache.hashes WHERE cache = $1 AND cstorehash = ANY($2)
         `, [cacheID, paths])

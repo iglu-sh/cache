@@ -10,7 +10,7 @@ export const post = [
             res.status(405).send('Method Not Allowed');
             return;
         }
-        console.log(req.url)
+
         //Check if the user is authenticated
         const auth = await isAuthenticated(req, res, async () => {
             return true
@@ -35,13 +35,13 @@ export const post = [
             res.status(400).send(`There is no public signing key for this cache, add one by using cachix generate-keypair ${cacheInfo.name}`)
             return;
         }
-        await Database.close()
 
         if(req.query.compression !== 'zst' && req.query.compression !== 'xz'){
             return res.status(400).json({
                 error: 'Invalid compression type, expected zstd or xz',
             })
         }
+
         //Get a random uuid for relating the store hash to the upload
         let uid:string = randomUUID()
         let chars = [...uid]

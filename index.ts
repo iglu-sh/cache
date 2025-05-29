@@ -8,8 +8,10 @@ import type {cache, cacheWithKeys} from "./utils/types.d/dbTypes.ts";
 import {makeApiKey} from "./utils/apiKeys.ts";
 import 'dotenv/config'
 import {migrate} from "./utils/migrations.ts";
+import {Logger} from "./utils/logger.ts";
+import {Chalk} from "chalk";
+
 const app = require('express')()
-const pino = require('pino-http')()
 
 let envs = [
     "CACHE_ROOT_DOMAIN",
@@ -30,6 +32,19 @@ envs.forEach(env => {
   }
 })
 
+//Set the log level
+const logger = new Logger()
+logger.setJsonLogging(!!(process.env.JSON_LOGGING && process.env.JSON_LOGGING.toLowerCase() === 'true'))
+
+//Default to info if the LOG_LEVEL is not set or invalid
+//@ts-ignore
+if(!["DEBUG", "INFO", "WARN", "ERROR"].includes(process.env.LOG_LEVEL.toUpperCase() as string)){
+    process.env.LOG_LEVEL = "INFO"
+}
+//@ts-ignore
+logger.setLogLevel(process.env.LOG_LEVEL.toUpperCase() as "DEBUG" | "INFO" | "WARN" | "ERROR")
+
+
 // Print config
 console.log("----------CONFIG----------")
 console.log("Database Host:\t" + process.env.POSTGRES_HOST)
@@ -42,15 +57,17 @@ console.log("Filesystem Max GB:\t" + process.env.CACHE_MAX_GB + ' GB')
 console.log("\n\n\n")
 
 let isReady = false
-let Database: db
+let Database: db = new db()
 while(!isReady){
     try {
-        Database = new db(true)
+        Database = new db()
         await Database.connect()
         isReady = true
     }
     catch(e){
-        console.log('Error whilst connecting to Database, is your Server up? Waiting 5 Seconds to retry', e)
+        Logger.error(`Error whilst connecting to Database, is your Server up? Waiting 5 Seconds to retry ${e}`)
+        //Destroy the Database instance to prevent memory leaks and to avoid a bug with reconnecting client
+        await Database.destroy()
         //Wait for 5 seconds
         await new Promise((resolve) => setTimeout(resolve, 5000))
     }
@@ -68,7 +85,7 @@ await Database.insertServerSettings(
 await Database.getAllCaches().then(async (caches:Array<cacheWithKeys>)=>{
     if(caches.length === 0){
         //Create a default cache
-        console.log('No caches found, creating default cache')
+        Logger.info('No caches found, creating default cache')
         await Database.createCache("default", "Read", true, "none", "XZ", `${process.env.CACHE_ROOT_DOMAIN}`)
     }
     caches = await Database.getAllCaches()
@@ -77,34 +94,34 @@ await Database.getAllCaches().then(async (caches:Array<cacheWithKeys>)=>{
     for (const cache of caches) {
         //Updating CACHE_ROOT_DOMAIN if needed
         if(cache.uri != process.env.CACHE_ROOT_DOMAIN && process.env.AUTO_FIX_CACHE_ROOT_DOMAIN !== "false"){
-          console.log("Updating CACHE_ROOT_DOMAIN for cache \"" + cache.name + "\"")
+          Logger.debug("Updating CACHE_ROOT_DOMAIN for cache \"" + cache.name + "\"")
           await Database.updateCacheURI(process.env.CACHE_ROOT_DOMAIN, cache.id)
         }
         if(cache.allowedKeys.length === 0 || cache.allowedKeys[0] === null || cache.allowedKeys[0] === "NULL"){
             const cacheKey = makeApiKey(cache.name)
-            console.log(`Initial Key for cache ${cache.name}: ${cacheKey}`)
+            Logger.info(`Initial Key for cache ${cache.name}: ${cacheKey}`)
             try{
                 let newHash = await Database.appendApiKey(cache.id, cacheKey)
                 //Add this key to the cache
                 cache.allowedKeys[0] = newHash
             }
             catch(e) {
-                console.error('Error whilst appening:', e)
+                Logger.error(`Error whilst appening: ${e}`)
                 return -1
             }
         }
         //Check the public signing keys and "create" a default one
         if(cache.publicSigningKeys.length === 0 || cache.publicSigningKeys[0] === null){
-            console.log(`No public signing keys found for cache ${cache.name} creating placeholder`)
+            Logger.debug(`No public signing keys found for cache ${cache.name} creating placeholder`)
             //Get the first api key available in the database
             const apiKey = cache.allowedKeys[0]
             if(!apiKey) continue
-            console.log(`Using API key ${apiKey} to create a new public signing key`)
+
             //Create a new public signing key
             await Database.appendPublicKey(cache.id, "<empty>",  apiKey, true)
         }
         //Show the public signing key for this cache
-        console.log(`Public signing keys for cache ${cache.name}: ${cache.publicSigningKeys.map((key)=>key == "" ? "<empty>" : key).join(", ")}`)
+        Logger.debug(`Public signing keys for cache ${cache.name}: ${cache.publicSigningKeys.map((key)=>key == "" ? "<empty>" : key).join(", ")}`)
     }
 })
 
@@ -114,7 +131,7 @@ const paths = await Database.getDirectAccess().query(`
 `)
 for(const pathObj of paths.rows){
     if(!fs.existsSync(pathObj.path)){
-        console.log(`Path ${pathObj.path} does not exist, removing from database`)
+        Logger.debug(`Path ${pathObj.path} does not exist in database, removing from database`)
         //Delete the path from the database
         await Database.getDirectAccess().query(`
             DELETE FROM cache.request WHERE hash = ${pathObj.id}
@@ -128,7 +145,7 @@ for(const pathObj of paths.rows){
     const stats = fs.statSync(pathObj.path);
     const fileSizeInBytes = stats.size;
     if(fileSizeInBytes === 0){
-        console.log(`Path ${pathObj.path} is empty, removing from database and unlinking`)
+        Logger.debug(`Path ${pathObj.path} is empty, removing from database and unlinking`)
         //Delete the path from the database
         await Database.deletePath(pathObj.id)
         //Unlink the file
@@ -146,7 +163,7 @@ for(const cache of await Database.getAllCaches()){
     for(const file of files){
         //Check if the file is a file that ends with a number instead of .xz or .zstd
         if(!file.endsWith('.xz') && !file.endsWith('.zstd')){
-            console.log(`Part file ${file} found, removing`)
+            logger.debug(`Part file ${file} found, removing`)
             fs.unlinkSync(`${cacheDir}/${file}`)
         }
     }
@@ -156,22 +173,21 @@ await Database.close()
 
 app.use(raw())
 
+//Log requests
+app.use((req:Request, res:Response, next:NextFunction)=>{
+    //Log the request
+    res.on('finish', ()=>{
+        //Log the response
+        Logger.logResponse(req.url, req.method, res.statusCode)
+    })
+    next()
+})
 await createRouter(app, {
     additionalMethods: [ "ws" ]
 })
-
-
-
-
 app.use((req:Request, res:Response) => {
     //req.log.info(req.url)
-    console.log('CATCHALL', req.url)
-    console.log('CATCHALL method', req.method)
-    console.log('CATCHALL headers', req.headers)
-    if(req.body){
-        //console.log('Req body', req.body)
-        //fs.writeFileSync(__dirname + "/req.json", JSON.stringify(req.body), "utf8")
-    }
+    Logger.logRequest(`[CATCHALL] ${req.url}`, req.method)
     res.status(200).send('OK');
 });
 
