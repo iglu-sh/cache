@@ -11,7 +11,7 @@ export async function migrate(db:Database){
     `).then((caches) => {return caches.rows});
     const log = new Logger()
     if(!caches || caches.length == 0){
-        log.debug('Skiping migrations because no caches in db.')
+        log.debug('Skipping migrations because no caches in db.')
         return;
     }
     //Public Signing keys in cache to new format
