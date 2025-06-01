@@ -42,7 +42,7 @@ buildBunApplication {
   bunScript = "prod";
 
   filesToInstall = [
-    "index.ts"
+    "instrumentation.ts"
     "routes"
     "utils"
   ];
