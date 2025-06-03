@@ -41,7 +41,7 @@ services:
       - ./postgres_data:/var/lib/postgresql/data
 
   cache:
-    image: ghcr.io/iglu-sh/iglu-cache-docker:latest
+    image: ghcr.io/iglu-sh/iglu-cache:latest
     environment:
       CACHE_ROOT_DOMAIN: http://localhost:3000
       POSTGRES_USER: postgres
