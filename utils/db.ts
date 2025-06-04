@@ -158,46 +158,6 @@ export default class Database {
                 signing_key_id int constraint signing_key_fk references cache.public_signing_keys
             );
         `)
-        await Database.db.query(`
-            create table if not exists cache.builders
-            (
-                id serial constraint builders_pk primary key,
-                name text not null,
-                description text,
-                cache_id int constraint builders_cache_fk references cache.caches,
-                repository text not null,
-                branch text not null,
-                gitUsername text not null,
-                gitKey text not null,
-                enabled boolean default true,
-                trigger text default 'manual',
-                schedule text not null,
-                "buildOptions.cores" integer default 1,
-                "buildOptions.maxJobs" integer default 1,
-                "buildOptions.keep_going" boolean default false,
-                "buildOptions.extraArgs" text default '',
-                "buildOptions.substituters" text[] not null default '{"https://cache.nixos.org"}',
-                "buildOptions.trustedPublicKeys" text[] not null default '{"cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="}',
-                "buildOptions.command" text default 'nix-build',
-                "buildOptions.cachix.push" boolean default false,
-                "buildOptions.cachix.target" text default '',
-                "buildOptions.cachix.apiKey" text default '',
-                "buildOptions.cachix.signingKey" text default '',
-                "buildOptions.cachix.cachixPushSourceDir" text default 'result'
-            )
-        `)
-        await Database.db.query(`
-            create table if not exists cache.builder_runs
-            (
-                id serial constraint builder_runs_pk primary key,
-                builder_id int constraint builder_fk references cache.builders,
-                status text not null,
-                time timestamp default now() not null,
-                gitCommit text not null,
-                duration integer not null, -- in seconds
-                log text
-            )
-        `)
         Logger.info('Database setup complete')
     }
 
