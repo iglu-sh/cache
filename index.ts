@@ -1,15 +1,14 @@
 import type {NextFunction, Request, Response} from 'express'
-import bodyParser from "express";
 import fs from "fs";
 import raw from 'express'
 import db from "./utils/db";
-import createRouter, {router} from "express-file-routing"
-import type {cache, cacheWithKeys} from "./utils/types.d/dbTypes.ts";
+import createRouter from "express-file-routing"
+import type {cacheWithKeys} from "./utils/types.d/dbTypes.ts";
 import {makeApiKey} from "./utils/apiKeys.ts";
 import 'dotenv/config'
 import {migrate} from "./utils/migrations.ts";
 import {Logger} from "./utils/logger.ts";
-import {Chalk} from "chalk";
+import { startExporter } from './utils/metric.ts';
 
 const app = require('express')()
 
@@ -38,6 +37,11 @@ logger.setJsonLogging(!!(process.env.JSON_LOGGING && process.env.JSON_LOGGING.to
 //Default to info if the LOG_LEVEL is not set or invalid
 if(!process.env.LOG_LEVEL){
     process.env.LOG_LEVEL = "INFO"
+}
+
+//Default enable Prometheus
+if(!process.env.PROM_ENABLE){
+    process.env.PROM_ENABLE = "true"
 }
 
 if(!["DEBUG", "INFO", "WARN", "ERROR"].includes(process.env.LOG_LEVEL.toUpperCase() as string)){
@@ -172,6 +176,10 @@ for(const cache of await Database.getAllCaches()){
 }
 
 await Database.close()
+
+if(process.env.PROM_ENABLE === "true"){
+  startExporter()
+}
 
 app.use(raw())
 
