@@ -28,7 +28,7 @@ export async function startExporter(){
   const meter = metrics.getMeter('iglu-meter');
   const prefix = "iglu_cache"
 
-  // 
+  // count Derivations
   const drvCounter = meter.createObservableGauge(prefix + "_derivation_count" ,{
     description: 'Number of derivations in the cache',
   });
