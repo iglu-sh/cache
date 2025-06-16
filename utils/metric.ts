@@ -1,6 +1,7 @@
 import { MeterProvider } from '@opentelemetry/sdk-metrics-base';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { metrics } from '@opentelemetry/api';
+import { Logger } from './logger';
 
 export async function startExporter(){
 
@@ -12,7 +13,7 @@ export async function startExporter(){
   const prometheusExporter = new PrometheusExporter(
     { port: Number(process.env.PROM_PORT) },
     () => {
-      console.log('Prometheus scrape endpoint: http://localhost:9464/metrics');
+      Logger.info('Prometheus scrape endpoint: http://localhost:'+ process.env.PROM_PORT + '/metrics');
     }
   );
 
