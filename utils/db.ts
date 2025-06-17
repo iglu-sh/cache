@@ -513,6 +513,7 @@ export default class Database {
         GROUP BY cache.caches.id
       `)
       return cacheSizeResult.rows
+    }
 
     public async getAPIKeyID(key:string):Promise<number>{
         const hashedKey = new Bun.CryptoHasher("sha512")
