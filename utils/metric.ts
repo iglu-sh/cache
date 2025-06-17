@@ -39,7 +39,7 @@ export async function startExporter(){
   drvCounter.addCallback(async (res) => {
     const dbRes = await Database.getDerivationCount()
     dbRes.forEach((row) => {
-      res.observe(Number(row.count), {cache: row.name})
+      res.observe(Number(row.count), {cache: row.name, uri: row.uri})
     })
   })
 
@@ -51,7 +51,7 @@ export async function startExporter(){
   cacheSize.addCallback(async (res) => {
     const dbRes = await Database.getCacheSize()
     dbRes.forEach((row) => {
-      res.observe(Number(row.size), {cache: row.name})
+      res.observe(Number(row.size), {cache: row.name, uri: row.uri})
     })
   })
 
@@ -63,7 +63,7 @@ export async function startExporter(){
   cacheRequests.addCallback(async (res) => {
     const dbRes = await Database.getCacheRequests()
     dbRes.forEach((row) => {
-      res.observe(Number(row.count), {cache: row.name})
+      res.observe(Number(row.count), {cache: row.name, uri: row.uri})
     })
   })
 }

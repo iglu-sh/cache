@@ -480,11 +480,12 @@ export default class Database {
     }
 
     public async getDerivationCount():Promise<{
-      name: string
-      count: string
+      name: string,
+      count: string,
+      uri: string
     }[]>{
       const derivationCountResult = await Database.db.query(`
-        SELECT cache.caches.name, COUNT(cache.hashes.id) FROM cache.hashes
+        SELECT cache.caches.name, cache.caches.uri, COUNT(cache.hashes.id) FROM cache.hashes
         LEFT JOIN cache.caches ON cache.caches.id = cache.hashes.cache
         GROUP BY cache.caches.id
       `)
@@ -492,11 +493,12 @@ export default class Database {
     }
 
     public async getCacheSize():Promise<{
-      name: string
-      size: string
+      name: string,
+      size: string,
+      uri: string
     }[]>{
       const cacheSizeResult = await Database.db.query(`
-        SELECT cache.caches.name, SUM(cache.hashes.cfilesize) AS size FROM cache.hashes
+        SELECT cache.caches.name, cache.caches.uri, SUM(cache.hashes.cfilesize) AS size FROM cache.hashes
         LEFT JOIN cache.caches ON cache.caches.id = cache.hashes.cache
         GROUP BY cache.caches.id
       `)
@@ -506,9 +508,10 @@ export default class Database {
     public async getCacheRequests():Promise<{
       name: string
       count: string
+      uri: string
     }[]>{
       const cacheSizeResult = await Database.db.query(`
-        SELECT cache.caches.name, COUNT(cache.request.id) FROM cache.request
+        SELECT cache.caches.name, cache.caches.uri, COUNT(cache.request.id) FROM cache.request
         LEFT JOIN cache.caches ON cache.caches.id = cache.request.cache_id
         GROUP BY cache.caches.id
       `)
