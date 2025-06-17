@@ -475,4 +475,28 @@ export default class Database {
           UPDATE cache.caches SET uri = $1 WHERE id = $2
       `, [uri, cacheID])
     }
+
+    public async getDerivationCount():Promise<{
+      name: string
+      count: string
+    }[]>{
+      const derivationCountResult = await Database.db.query(`
+        SELECT cache.caches.name, COUNT(cache.hashes.id) FROM cache.hashes
+        LEFT JOIN cache.caches ON cache.caches.id = cache.hashes.cache
+        GROUP BY cache.caches.id
+      `)
+      return derivationCountResult.rows
+    }
+
+    public async getCacheSize():Promise<{
+      name: string
+      size: string
+    }[]>{
+      const cacheSizeResult = await Database.db.query(`
+        SELECT cache.caches.name, SUM(cache.hashes.cnarsize) AS size FROM cache.hashes
+        LEFT JOIN cache.caches ON cache.caches.id = cache.hashes.cache
+        GROUP BY cache.caches.id
+      `)
+      return cacheSizeResult.rows
+    }
 }

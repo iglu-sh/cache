@@ -2,12 +2,15 @@ import { MeterProvider } from '@opentelemetry/sdk-metrics-base';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { metrics } from '@opentelemetry/api';
 import { Logger } from './logger';
+import db from './db';
 
 export async function startExporter(){
 
   if(!process.env.PROM_PORT){
       process.env.PROM_PORT = "9464"
   }
+  
+  const Database = new db();
 
   // Create Prometheus Exporter
   const prometheusExporter = new PrometheusExporter(
@@ -33,7 +36,22 @@ export async function startExporter(){
     description: 'Number of derivations in the cache',
   });
 
-  drvCounter.addCallback((res) => {
-    res.observe(20, {cache: "default"})
+  drvCounter.addCallback(async (res) => {
+    const dbRes = await Database.getDerivationCount()
+    dbRes.forEach((row) => {
+      res.observe(row.count, {cache: row.name})
+    })
+  })
+
+  // cache Size
+  const cacheSize = meter.createObservableGauge(prefix + "_cache_size", {
+    description: 'Size of the cache in byte'
+  })
+
+  cacheSize.addCallback(async (res) => {
+    const dbRes = await Database.getCacheSize()
+    dbRes.forEach((row) => {
+      res.observe(row.size, {cache: row.name})
+    })
   })
 }
