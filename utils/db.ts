@@ -493,8 +493,20 @@ export default class Database {
       size: string
     }[]>{
       const cacheSizeResult = await Database.db.query(`
-        SELECT cache.caches.name, SUM(cache.hashes.cnarsize) AS size FROM cache.hashes
+        SELECT cache.caches.name, SUM(cache.hashes.cfilesize) AS size FROM cache.hashes
         LEFT JOIN cache.caches ON cache.caches.id = cache.hashes.cache
+        GROUP BY cache.caches.id
+      `)
+      return cacheSizeResult.rows
+    }
+
+    public async getCacheRequests():Promise<{
+      name: string
+      count: string
+    }[]>{
+      const cacheSizeResult = await Database.db.query(`
+        SELECT cache.caches.name, COUNT(cache.request.id) FROM cache.request
+        LEFT JOIN cache.caches ON cache.caches.id = cache.request.cache_id
         GROUP BY cache.caches.id
       `)
       return cacheSizeResult.rows
