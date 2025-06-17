@@ -32,7 +32,7 @@ export async function startExporter(){
   const prefix = "iglu_cache"
 
   // count Derivations
-  const drvCounter = meter.createObservableGauge(prefix + "_derivation_count" ,{
+  const drvCounter = meter.createObservableUpDownCounter(prefix + "_derivation_count" ,{
     description: 'Number of derivations in the cache',
   });
 
@@ -44,7 +44,7 @@ export async function startExporter(){
   })
 
   // cache Size
-  const cacheSize = meter.createObservableGauge(prefix + "_cache_size", {
+  const cacheSize = meter.createObservableUpDownCounter(prefix + "_cache_size", {
     description: 'Size of the cache in byte'
   })
 
@@ -56,7 +56,7 @@ export async function startExporter(){
   })
 
   // cache requests
-  const cacheRequests = meter.createObservableGauge(prefix + "_cache_requests", {
+  const cacheRequests = meter.createObservableCounter(prefix + "_cache_requests", {
     description: 'Request count per cache'
   })
 
