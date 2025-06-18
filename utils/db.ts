@@ -479,6 +479,45 @@ export default class Database {
       `, [uri, cacheID])
     }
 
+    public async getDerivationCount():Promise<{
+      name: string,
+      count: string,
+      uri: string
+    }[]>{
+      const derivationCountResult = await Database.db.query(`
+        SELECT cache.caches.name, cache.caches.uri, COUNT(cache.hashes.id) FROM cache.hashes
+        LEFT JOIN cache.caches ON cache.caches.id = cache.hashes.cache
+        GROUP BY cache.caches.id
+      `)
+      return derivationCountResult.rows
+    }
+
+    public async getCacheSize():Promise<{
+      name: string,
+      size: string,
+      uri: string
+    }[]>{
+      const cacheSizeResult = await Database.db.query(`
+        SELECT cache.caches.name, cache.caches.uri, SUM(cache.hashes.cfilesize) AS size FROM cache.hashes
+        LEFT JOIN cache.caches ON cache.caches.id = cache.hashes.cache
+        GROUP BY cache.caches.id
+      `)
+      return cacheSizeResult.rows
+    }
+
+    public async getCacheRequests():Promise<{
+      name: string
+      count: string
+      uri: string
+    }[]>{
+      const cacheSizeResult = await Database.db.query(`
+        SELECT cache.caches.name, cache.caches.uri, COUNT(cache.request.id) FROM cache.request
+        LEFT JOIN cache.caches ON cache.caches.id = cache.request.cache_id
+        GROUP BY cache.caches.id
+      `)
+      return cacheSizeResult.rows
+    }
+
     public async getAPIKeyID(key:string):Promise<number>{
         const hashedKey = new Bun.CryptoHasher("sha512")
         hashedKey.update(key)
