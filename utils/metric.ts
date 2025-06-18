@@ -16,7 +16,7 @@ export async function startExporter(){
   const prometheusExporter = new PrometheusExporter(
     { port: Number(process.env.PROM_PORT) },
     () => {
-      Logger.info('Prometheus scrape endpoint: http://localhost:'+ process.env.PROM_PORT + '/metrics');
+      Logger.info('Prometheus scrape endpoint: http://0.0.0.0:'+ process.env.PROM_PORT + '/metrics');
     }
   );
 

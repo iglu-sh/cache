@@ -5,6 +5,10 @@ buildBunApplication {
 
   nodeModuleHash = "sha256-/6fla6z4OEhKd+PQFH2U821cAhlXM/6O/Ua+SE2vQTI=";
 
+  nodeModulesToKeep = [
+    "."
+  ];
+
   extraWrapScript = ''
     if [ -z "\$CACHE_ROOT_DOMAIN" ]; then
       export CACHE_ROOT_DOMAIN="http://localhost:3000"

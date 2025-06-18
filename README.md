@@ -25,7 +25,7 @@ Additionally, you may also specify the following variables:
 - `LOG_JSON` (default: `false`): If set to true, the logs will be in JSON format.
 - `AUTO_FIX_CACHE_ROOT_DOMAIN`: If this is set to false the `CACHE_ROOT_DOMAIN` is only used for new caches. If this is set to true (which is the default) all caches get the new domain on startup.
 - `PG_MODE` (default: `normal`) - If set to normal the application will use the postgres database. If set to lite, then a pglite database will be used instead and all postgres config variables will be ignored.
-- `PROM_ENABLE` (default: `true`): Enable the Prometheus endpoint on http://localhost:9464/metrics
+- `PROM_ENABLE` (default: `false`): Enable the Prometheus endpoint on http://localhost:9464/metrics
 ### Example of a configured docker-compose.yml file
 ```yaml
 services:
@@ -53,7 +53,7 @@ services:
       CACHE_FILESYSTEM_DIR: /tmp/cache #Should be mounted to an outside container if you want to persist files, else set to something in the container
       CACHE_MAX_GB: 10
       LOG_LEVEL: info
-      PROM_ENABLE: true
+      PROM_ENABLE: false
     volumes:
       - ./cache/nar_files:/tmp/cache
     ports:

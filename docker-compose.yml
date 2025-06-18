@@ -22,7 +22,7 @@ services:
       POSTGRES_PORT: 5432
       CACHE_FILESYSTEM_DIR: /tmp/cache #Should be mounted to an outside container if you want to persist files, else set to something in the container
       CACHE_JWT_SECRET: verysecret
-      PROM_ENABLE: true
+      PROM_ENABLE: false
     volumes:
       - ./cache/nar_files:/tmp/cache
     ports:

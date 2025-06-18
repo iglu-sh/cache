@@ -41,7 +41,7 @@ if(!process.env.LOG_LEVEL){
 
 //Default enable Prometheus
 if(!process.env.PROM_ENABLE){
-    process.env.PROM_ENABLE = "true"
+    process.env.PROM_ENABLE = "false"
 }
 
 if(!["DEBUG", "INFO", "WARN", "ERROR"].includes(process.env.LOG_LEVEL.toUpperCase() as string)){
