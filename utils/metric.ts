@@ -44,7 +44,7 @@ export async function startExporter(){
   })
 
   // cache Size
-  const cacheSize = meter.createObservableUpDownCounter(prefix + "_cache_size", {
+  const cacheSize = meter.createObservableUpDownCounter(prefix + "_size", {
     description: 'Size of the cache in byte'
   })
 
@@ -56,7 +56,7 @@ export async function startExporter(){
   })
 
   // cache requests
-  const cacheRequests = meter.createObservableCounter(prefix + "_cache_requests", {
+  const cacheRequests = meter.createObservableCounter(prefix + "_requests", {
     description: 'Request count per cache'
   })
 
