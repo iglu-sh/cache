@@ -7,8 +7,7 @@ import fs from 'fs'
 import db from "../../../../../../../utils/db.ts";
 import {isAuthenticated} from "../../../../../../../utils/middlewares/auth.ts";
 import getFileHash from "../../../../../../../utils/getFileHash.ts";
-import crypto from "crypto";
-import {Logger} from "../../../../../../../utils/logger.ts";
+import Logger from "@iglu-sh/logger";
 export const post = [
     bodyParser.json(),
     async (req: Request, res: Response, next: NextFunction) => {

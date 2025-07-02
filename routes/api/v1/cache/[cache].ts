@@ -1,8 +1,7 @@
 import bodyParser, { type Request, type Response } from 'express'
-import type {CacheInfo} from "../../../../utils/types.d/apiTypes.ts";
 import db from "../../../../utils/db.ts";
 import {isAuthenticated} from "../../../../utils/middlewares/auth.ts";
-import {Logger} from "../../../../utils/logger.ts";
+import Logger from "@iglu-sh/logger";
 export const get = [
     bodyParser.json(),
     async (req: Request, res: Response) => {
