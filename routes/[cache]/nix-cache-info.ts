@@ -10,7 +10,7 @@
 
 import db from "../../utils/db";
 import type { Request, Response } from "express";
-import {Logger} from "../../utils/logger.ts";
+import Logger from "@iglu-sh/logger";
 export const get = [
     async (req: Request, res: Response) => {
         if(req.method !== 'GET'){

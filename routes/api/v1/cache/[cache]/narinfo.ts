@@ -1,5 +1,4 @@
 import bodyParser, {type Request, type Response} from "express";
-import type {CacheInfo} from "../../../../../utils/types.d/apiTypes.ts";
 import db from "../../../../../utils/db.ts";
 import {isAuthenticated} from "../../../../../utils/middlewares/auth.ts";
 

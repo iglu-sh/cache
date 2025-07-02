@@ -2,7 +2,7 @@
 import bodyParser, {type NextFunction, type Request, type Response} from "express";
 import {isAuthenticated} from "../../../../../utils/middlewares/auth.ts";
 import db from "../../../../../utils/db.ts";
-import {Logger} from "../../../../../utils/logger.ts";
+import Logger from "@iglu-sh/logger";
 export const post = [
     bodyParser.json(),
     async (req: Request, res: Response, next: NextFunction) => {

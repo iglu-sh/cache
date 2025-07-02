@@ -6,7 +6,7 @@
 import bodyParser, {type NextFunction, type Request, type Response} from "express";
 import db from "../../../utils/db.ts";
 import fs from "fs";
-import {Logger} from "../../../utils/logger.ts";
+import Logger from "@iglu-sh/logger";
 
 export const get = [
     bodyParser.json(),
