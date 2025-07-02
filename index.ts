@@ -31,7 +31,7 @@ envs.forEach(env => {
 })
 
 //Set the log level
-Logger.setPrefix("cache")
+Logger.setPrefix("cache", "RED")
 Logger.setJsonLogging(!!(process.env.JSON_LOGGING && process.env.JSON_LOGGING.toLowerCase() === 'true'))
 
 //Default to info if the LOG_LEVEL is not set or invalid
