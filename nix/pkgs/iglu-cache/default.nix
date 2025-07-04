@@ -3,7 +3,7 @@
 buildBunApplication {
   src = ../../..;
 
-  nodeModuleHash = "sha256-sQnA+3PQHYvym7G3S1ekBj/P6+vHhO6YAI3mLMw+j4k=";
+  nodeModuleHash = "sha256-RH7/nG69QgKt3YnodtFjfD8lYHz0fJHuku3j8e6meWU=";
 
   nodeModulesToKeep = [
     "."
