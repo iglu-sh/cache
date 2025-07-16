@@ -5,10 +5,6 @@ buildBunApplication {
 
   nodeModuleHash = "sha256-RH7/nG69QgKt3YnodtFjfD8lYHz0fJHuku3j8e6meWU=";
 
-  nodeModulesToKeep = [
-    "."
-  ];
-
   extraWrapScript = ''
     if [ -z "\$CACHE_ROOT_DOMAIN" ]; then
       export CACHE_ROOT_DOMAIN="http://localhost:3000"
@@ -40,6 +36,10 @@ buildBunApplication {
 
     if [ -z "\$CACHE_JWT_SECRET" ]; then
       export CACHE_JWT_SECRET="secret"
+    fi
+    
+    if [ -z "\$CACHE_MAX_GB" ]; then
+      export CACHE_MAX_GB="100"
     fi
   '';
 
