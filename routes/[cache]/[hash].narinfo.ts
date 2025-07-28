@@ -18,7 +18,7 @@
 
 import { type NextFunction, type Request, type Response } from 'express';
 import db from '../../utils/db.ts';
-import {Logger} from "../../utils/logger.ts";
+import Logger from "@iglu-sh/logger";
 export const get = async (req: Request, res: Response, next: NextFunction) => {
 
     //TODO: Figure out what the nix client actually wants back from a HEAD request

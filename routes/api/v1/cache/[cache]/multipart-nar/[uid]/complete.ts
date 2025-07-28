@@ -6,11 +6,8 @@ import type { Request, Response, NextFunction } from "express";
 import fs from 'fs'
 import db from "../../../../../../../utils/db.ts";
 import {isAuthenticated} from "../../../../../../../utils/middlewares/auth.ts";
-import nacl from 'tweetnacl'
-import util from 'tweetnacl-util'; // Import tweetnacl-util for encoding/decoding
 import getFileHash from "../../../../../../../utils/getFileHash.ts";
-import crypto from "crypto";
-import {Logger} from "../../../../../../../utils/logger.ts";
+import Logger from "@iglu-sh/logger";
 export const post = [
     bodyParser.json(),
     async (req: Request, res: Response, next: NextFunction) => {
@@ -196,11 +193,20 @@ export const post = [
             //TODO: Maybe implement a check if the narInfoObject is valid by some miracle publicsigning key. The Algorithm should be Ed25519
             //However: I've spent the last 5 hours trying to verify that goddamn signature and I don't think it's possible anymore. Chatgpt says that only the .narinfo object hast to be verified (without the signature key)
 
-
             //...and insert the narinfo into the database
             try {
+                // Get the API Key ID
+                if(!req.headers.authorization){
+                    throw new Error("Missing Authorization Header???")
+                }
+                let reqApiKey = req.headers.authorization.split(" ")[1]
+                if(!reqApiKey){
+                    throw new Error("Missing Authorization Header")
+                }
+                const apiKeyID = await Database.getAPIKeyID(reqApiKey)
+
                 //@ts-ignore
-                await Database.createStorePath(req.params.cache, req.body, req.params.uid, compression)
+                await Database.createStorePath(req.params.cache, req.body, req.params.uid, compression, apiKeyID)
             } catch (e) {
                 Logger.debug(`Error creating store path ${e}`)
                 return res.status(500).json({

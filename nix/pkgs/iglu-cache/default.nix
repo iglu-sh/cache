@@ -3,7 +3,7 @@
 buildBunApplication {
   src = ../../..;
 
-  nodeModuleHash = "sha256-DPVc7ET33L6HfPnuFv5uG+DII7+KL6cAxYmP+8nk0Qs=";
+  nodeModuleHash = "sha256-RH7/nG69QgKt3YnodtFjfD8lYHz0fJHuku3j8e6meWU=";
 
   extraWrapScript = ''
     if [ -z "\$CACHE_ROOT_DOMAIN" ]; then
@@ -36,6 +36,10 @@ buildBunApplication {
 
     if [ -z "\$CACHE_JWT_SECRET" ]; then
       export CACHE_JWT_SECRET="secret"
+    fi
+    
+    if [ -z "\$CACHE_MAX_GB" ]; then
+      export CACHE_MAX_GB="100"
     fi
   '';
 

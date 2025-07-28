@@ -1,7 +1,6 @@
 import type {Request, Response} from "express";
-import md5File from 'md5-file'
 import fs from 'fs'
-import {Logger} from "../../../utils/logger.ts";
+import Logger from "@iglu-sh/logger";
 import {isAuthenticated} from "../../../utils/middlewares/auth.ts";
 function reqWasAborted(req:Request){
     return req.socket.destroyed || req.socket.readableEnded || req.socket.writableEnded

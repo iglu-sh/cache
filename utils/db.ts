@@ -1,7 +1,7 @@
-import { Client } from 'pg';
+import {Client} from 'pg';
 import type {cache, cacheWithKeys, storeNarInfo} from "./types.d/dbTypes.ts";
 import type {CacheInfo, narUploadSuccessRequestBody} from "./types.d/apiTypes.ts";
-import { PGlite } from '@electric-sql/pglite'
+import {PGlite} from '@electric-sql/pglite'
 import {Logger} from "./logger.ts";
 
 export default class Database {
@@ -66,6 +66,17 @@ export default class Database {
                         priority INTEGER DEFAULT 40
                     )
             `)
+        await Database.db.query(`
+            create table if not exists cache.keys
+            (
+                id serial constraint keys_pk primary key,
+                name text not null,
+                hash text not null,
+                description text,
+                created_at timestamp default now() not null,
+                updated_at timestamp default now() not null
+            )
+        `)
 
         await Database.db.query(`
                 create table IF NOT EXISTS cache.hashes(
@@ -87,7 +98,9 @@ export default class Database {
                     cStoreHash TEXT NOT NULL,
                     cStoreSuffix TEXT NOT NULL,
                     parts JSONB[] NOT NULL,
-                    compression TEXT NOT NULL
+                    compression TEXT NOT NULL,
+                    -- This is the API key of the creator of this hash, it allows us to invalidate any hashes created by a specific API key once it is deleted **or** the public signing key associated with that API key is changed
+                    creator_api_key INTEGER NOT NULL constraint apiKeyIDFK references cache.keys(id)
                 );
             `)
 
@@ -108,17 +121,6 @@ export default class Database {
             );
         `)
 
-        await Database.db.query(`
-            create table if not exists cache.keys
-                (
-                id serial constraint keys_pk primary key,
-                name text not null,
-                hash text not null,
-                description text,
-                created_at timestamp default now() not null,
-                updated_at timestamp default now() not null
-            )
-        `)
         await Database.db.query(`
             create table if not exists cache.cache_key 
             (
@@ -183,7 +185,7 @@ export default class Database {
         }
     }
 
-    public async createStorePath(cache:string, narReturn:narUploadSuccessRequestBody, uid:string, compression: "xz" | 'zstd'):Promise<void>{
+    public async createStorePath(cache:string, narReturn:narUploadSuccessRequestBody, uid:string, compression: "xz" | 'zstd', creatorAPIKey:number):Promise<void>{
         //Check if the cache exists (just to be sure)
         const cacheID = await this.getCacheID(cache)
         if(cacheID === -1){
@@ -193,9 +195,9 @@ export default class Database {
 
         await Database.db.query(`
             INSERT INTO cache.hashes 
-                (path, cache, cderiver, cfilehash, cfilesize, cnarhash, cnarsize, creferences, csig, cstorehash, cstoresuffix, parts, compression)
+                (path, cache, cderiver, cfilehash, cfilesize, cnarhash, cnarsize, creferences, csig, cstorehash, cstoresuffix, parts, compression, creator_api_key)
             VALUES 
-                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
             RETURNING *
         `,
             [
@@ -211,7 +213,8 @@ export default class Database {
                 narReturn.narInfoCreate.cStoreHash,
                 narReturn.narInfoCreate.cStoreSuffix,
                 narReturn.parts.map((part)=>{return JSON.stringify(part)}).map((part)=>{return JSON.parse(part)}), //Convert the parts to JSONB
-                compression
+                compression,
+                creatorAPIKey
             ]
         ).then(async (res)=>{
             await this.logRequest(res.rows[0].id, res.rows[0].cache, "inbound")
@@ -478,5 +481,61 @@ export default class Database {
       await Database.db.query(`
           UPDATE cache.caches SET uri = $1 WHERE id = $2
       `, [uri, cacheID])
+    }
+
+    public async getDerivationCount():Promise<{
+      name: string,
+      count: string,
+      uri: string
+    }[]>{
+      const derivationCountResult = await Database.db.query(`
+        SELECT cache.caches.name, cache.caches.uri, COUNT(cache.hashes.id) FROM cache.hashes
+        LEFT JOIN cache.caches ON cache.caches.id = cache.hashes.cache
+        GROUP BY cache.caches.id
+      `)
+      return derivationCountResult.rows
+    }
+
+    public async getCacheSize():Promise<{
+      name: string,
+      size: string,
+      uri: string
+    }[]>{
+      const cacheSizeResult = await Database.db.query(`
+        SELECT cache.caches.name, cache.caches.uri, SUM(cache.hashes.cfilesize) AS size FROM cache.hashes
+        LEFT JOIN cache.caches ON cache.caches.id = cache.hashes.cache
+        GROUP BY cache.caches.id
+      `)
+      return cacheSizeResult.rows
+    }
+
+    public async getCacheRequests():Promise<{
+      name: string
+      count: string
+      uri: string
+    }[]>{
+      const cacheSizeResult = await Database.db.query(`
+        SELECT cache.caches.name, cache.caches.uri, COUNT(cache.request.id) FROM cache.request
+        LEFT JOIN cache.caches ON cache.caches.id = cache.request.cache_id
+        GROUP BY cache.caches.id
+      `)
+      return cacheSizeResult.rows
+    }
+
+    public async getAPIKeyID(key:string):Promise<number>{
+        const hashedKey = new Bun.CryptoHasher("sha512")
+        hashedKey.update(key)
+        const hash = hashedKey.digest("hex")
+
+        return await Database.db.query(`
+            SELECT id
+            FROM cache.keys
+            WHERE hash = $1
+        `, [hash]).then((res) => {
+            if (res.rows.length === 0) {
+                throw new Error('API Key not found')
+            }
+            return res.rows[0].id
+        })
     }
 }

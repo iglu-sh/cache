@@ -19,6 +19,7 @@ dockerTools.buildImage {
   config = {
     ExposedPorts = {
       "3000/tcp" = { };
+      "9464/tcp" = { };
     };
     Cmd = [ "/bin/iglu-cache" ];
   };

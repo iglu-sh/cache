@@ -1,15 +1,14 @@
 import type {NextFunction, Request, Response} from 'express'
-import bodyParser from "express";
 import fs from "fs";
 import raw from 'express'
 import db from "./utils/db";
-import createRouter, {router} from "express-file-routing"
-import type {cache, cacheWithKeys} from "./utils/types.d/dbTypes.ts";
+import createRouter from "express-file-routing"
+import type {cacheWithKeys} from "./utils/types.d/dbTypes.ts";
 import {makeApiKey} from "./utils/apiKeys.ts";
 import 'dotenv/config'
 import {migrate} from "./utils/migrations.ts";
-import {Logger} from "./utils/logger.ts";
-import {Chalk} from "chalk";
+import Logger from "@iglu-sh/logger";
+import { startExporter } from './utils/metric.ts';
 
 const app = require('express')()
 
@@ -32,19 +31,24 @@ envs.forEach(env => {
 })
 
 //Set the log level
-const logger = new Logger()
-logger.setJsonLogging(!!(process.env.JSON_LOGGING && process.env.JSON_LOGGING.toLowerCase() === 'true'))
+Logger.setPrefix("cache", "RED")
+Logger.setJsonLogging(!!(process.env.JSON_LOGGING && process.env.JSON_LOGGING.toLowerCase() === 'true'))
 
 //Default to info if the LOG_LEVEL is not set or invalid
 if(!process.env.LOG_LEVEL){
     process.env.LOG_LEVEL = "INFO"
 }
 
+//Default enable Prometheus
+if(!process.env.PROM_ENABLE){
+    process.env.PROM_ENABLE = "false"
+}
+
 if(!["DEBUG", "INFO", "WARN", "ERROR"].includes(process.env.LOG_LEVEL.toUpperCase() as string)){
     process.env.LOG_LEVEL = "INFO"
 }
 //@ts-ignore
-logger.setLogLevel(process.env.LOG_LEVEL.toUpperCase() as "DEBUG" | "INFO" | "WARN" | "ERROR")
+Logger.setLogLevel(process.env.LOG_LEVEL.toUpperCase() as "DEBUG" | "INFO" | "WARN" | "ERROR")
 
 
 // Print config
@@ -165,13 +169,17 @@ for(const cache of await Database.getAllCaches()){
     for(const file of files){
         //Check if the file is a file that ends with a number instead of .xz or .zstd
         if(!file.endsWith('.xz') && !file.endsWith('.zstd')){
-            logger.debug(`Part file ${file} found, removing`)
+            Logger.debug(`Part file ${file} found, removing`)
             fs.unlinkSync(`${cacheDir}/${file}`)
         }
     }
 }
 
 await Database.close()
+
+if(process.env.PROM_ENABLE === "true"){
+  startExporter()
+}
 
 app.use(raw())
 
