@@ -82,7 +82,7 @@ await Database.setupDB();
 
 //Insert the default cache if it does not exist
 await Database.insertServerSettings(
-    process.env.CACHE_FILESYSTEM_DIR,
+    process.env.CACHE_FILESYSTEM_DIR!,
     process.env.LOG_LEVEL,
     process.env.CACHE_MAX_GB,
     process.env.CACHE_ROOT_DOMAIN

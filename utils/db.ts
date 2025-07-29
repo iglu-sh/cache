@@ -6,7 +6,7 @@ import {Logger} from "./logger.ts";
 
 export default class Database {
     
-    private static db?:Client | PGlite;
+    private static db:Client;
     constructor(){
         //Skip the constructor if the database is already initialized
         if(Database.db) return
@@ -21,15 +21,14 @@ export default class Database {
             });
         }
         else{
-            Logger.info('Using PGlite as the database')
-            Database.db = new PGlite("/tmp/pg_data")
+            Logger.error("Not implemented")
+            process.exit(1)
         }
     }
     public async destroy():Promise<void>{
         Logger.info('Destroying database')
         if(!process.env.PG_MODE || process.env.PG_MODE != 'lite'){
             await Database.db.end()
-            delete Database.db
         }
         else{
             Logger.info('Using PGlite so not destroying')
@@ -46,6 +45,11 @@ export default class Database {
         Logger.info('Connected to the Database')
     }
     public async setupDB():Promise<void>{
+        // Load extensions
+        await Database.db.query(`
+            CREATE EXTENSION IF NOT EXISTS "http";
+            CREATE EXTENSION IF NOT EXISTS "pg_cron";
+        `)
         await Database.db.query(`
                 CREATE SCHEMA IF NOT EXISTS cache
             `)
