@@ -1,6 +1,6 @@
 services:
   postgres:
-    build: .
+    image: ghcr.io/iglu-sh/postgres:latest
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
