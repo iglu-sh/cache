@@ -7,9 +7,10 @@ import {Logger} from "./logger.ts";
 export default class Database {
     
     private static db:Client;
+    private static dbConnected: boolean = false;
     constructor(){
-        //Skip the constructor if the database is already initialized
-        if(Database.db) return
+        // Skip if already connected
+        if(Database.dbConnected) return
         if(!process.env.PG_MODE || process.env.PG_MODE != 'lite'){
             Logger.info('Using PostgreSQL as the database')
             Database.db = new Client({
@@ -43,6 +44,7 @@ export default class Database {
             Logger.info('Using PGlite so not connecting')
         }
         Logger.info('Connected to the Database')
+        Database.dbConnected = true;
     }
     public async setupDB():Promise<void>{
         // Load extensions
