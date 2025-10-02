@@ -63,7 +63,7 @@ console.log("Filesystem Max GB:\t" + process.env.CACHE_MAX_GB + ' GB')
 console.log("\n\n\n")
 
 let isReady = false
-let Database: db = new db()
+let Database: db = new db();
 while(!isReady){
     try {
         Database = new db()
