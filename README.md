@@ -30,12 +30,11 @@ Additionally, you may also specify the following variables:
 ```yaml
 services:
   postgres:
-    image: postgres:latest
+    image: ghcr.io/iglu-sh/postgres:latest
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: cache
-    command: ["postgres", "-c", "log_statement=all"]
     ports:
       - "5432:5432"
     volumes:

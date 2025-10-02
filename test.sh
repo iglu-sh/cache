@@ -2,7 +2,7 @@
 rm ./.cachix.dhll
 docker stop --all
 
-docker pull ghcr.io/iglu-sh/iglu-builder:latest postgres:17
+docker pull ghcr.io/iglu-sh/iglu-builder:latest ghcr.io/iglu-sh/postgres:latest
 nix build .#iglu-cache-docker
 docker load < result
 
@@ -17,7 +17,7 @@ POSTGRES_CONTAINER=$(docker run --rm -d \
   -e POSTGRES_DB="cache" \
   --hostname tst-postgres \
   --name tst-postgres \
-  postgres)
+  iglu-sh/postgres)
 
 BUILDER_CONTAINER=$(docker run --rm -d \
   -e LOG_LEVEL="DEBUG" \
