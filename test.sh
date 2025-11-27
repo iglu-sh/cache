@@ -29,7 +29,6 @@ BUILDER_CONTAINER=$(docker run --rm -d \
 
 CACHE_CONTAINER=$(docker run --rm -d \
   --network=iglu_test \
-  -e CACHE_MAX_GB=100 \
   -e POSTGRES_PASSWORD="iglu" \
   -e POSTGRES_USER="iglu" \
   -e POSTGRES_HOST="tst-postgres" \

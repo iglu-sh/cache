@@ -169,11 +169,11 @@ export default class Database {
         Logger.info('Database setup complete')
     }
 
-    public async insertServerSettings(fs_storage_path:string, log_level:string, max_storage_size:number, cache_root_domain:string):Promise<void>{
+    public async insertServerSettings(fs_storage_path:string, log_level:string, cache_root_domain:string):Promise<void>{
         await Database.db.query(`
             INSERT INTO cache.server_config (fs_storage_path, log_level, max_storage_size, cache_root_domain) 
-            VALUES ($1, $2, $3, $4)
-        `, [fs_storage_path, log_level, max_storage_size, cache_root_domain])
+            VALUES ($1, $2, 0, $3)
+        `, [fs_storage_path, log_level, cache_root_domain])
     }
 
     public async getCaches():Promise<Array<cache>> {
