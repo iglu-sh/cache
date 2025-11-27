@@ -1,4 +1,7 @@
-{ bun2nix }:
+{ bun2nix
+, deadnix
+, nixpkgs-fmt
+}:
 
 bun2nix.writeBunApplication {
   packageJson = ../../../package.json;
@@ -9,6 +12,11 @@ bun2nix.writeBunApplication {
   };
 
   dontUseBunBuild = true;
+
+  nativeBuildInputs = [
+    deadnix
+    nixpkgs-fmt
+  ];
 
   startScript = "bun run prod";
 
