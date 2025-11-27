@@ -17,7 +17,6 @@ You need to set at least these variables in the environment of the cache service
 - `POSTGRES_USER`: User of the postgresql server.
 - `POSTGRES_PASSWORD`: Password for the user of the postgresql server.
 - `POSTGRES_DB`: Database of the postgresql server.
-- `CACHE_MAX_GB`: The maximum size of the cache in gigabytes. If the cache exceeds this size, old entries will be removed.
 
 ### Optional Environment Variables
 Additionally, you may also specify the following variables:
@@ -50,7 +49,6 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       CACHE_FILESYSTEM_DIR: /tmp/cache #Should be mounted to an outside container if you want to persist files, else set to something in the container
-      CACHE_MAX_GB: 10
       LOG_LEVEL: info
       PROM_ENABLE: false
     volumes:

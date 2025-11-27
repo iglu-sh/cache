@@ -3,11 +3,15 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     utils.url = "github:gytis-ivaskevicius/flake-utils-plus?ref=afcb15b845e74ac5e998358709b2b5fe42a948d1";
-    iglu-flake.url = "github:iglu-sh/flake?ref=4aae76f770fe362851673e14fa18bf98be788bf4";
+
+    bun2nix = {
+      url = "github:nix-community/bun2nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   # deadnix: skip
-  outputs = inputs@{ self, nixpkgs, utils, iglu-flake }:
+  outputs = inputs@{ self, nixpkgs, utils, bun2nix }:
     utils.lib.mkFlake {
       inherit self inputs;
 
@@ -20,8 +24,7 @@
       overlay = import ./nix/pkgs;
 
       sharedOverlays = [
-        inputs.iglu-flake.overlays.lib
-        inputs.iglu-flake.overlays.pkgs
+        inputs.bun2nix.overlays.default
         self.overlay
       ];
 
@@ -42,10 +45,7 @@
               exec zsh
             '';
           };
-          packages = {
-            inherit (nixpkgs.iglu) iglu-cache;
-            inherit (nixpkgs.iglu) iglu-cache-docker;
-          };
+          packages = nixpkgs.iglu;
         };
     };
 }

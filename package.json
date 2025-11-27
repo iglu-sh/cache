@@ -12,7 +12,8 @@
   },
   "scripts": {
     "dev": "bun run --hot ./index.ts | pino-pretty",
-    "prod": "bun run ./index.ts"
+    "prod": "bun run ./index.ts",
+    "postinstall": "bunx bun2nix -o ./nix/pkgs/iglu-cache-test/bun.nix"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.3.2",

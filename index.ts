@@ -17,7 +17,6 @@ const app = require('express')()
 let envs = [
     "CACHE_ROOT_DOMAIN",
     "CACHE_FILESYSTEM_DIR",
-    "CACHE_MAX_GB",
     "POSTGRES_DB",
     "POSTGRES_USER",
     "POSTGRES_HOST",
@@ -61,7 +60,6 @@ console.log("Database User:\t" + process.env.POSTGRES_USER)
 console.log("Database DB:\t" + process.env.POSTGRES_DB)
 console.log("Root Domain:\t" + process.env.CACHE_ROOT_DOMAIN)
 console.log("Filesystem Dir:\t" + process.env.CACHE_FILESYSTEM_DIR)
-console.log("Filesystem Max GB:\t" + process.env.CACHE_MAX_GB + ' GB')
 console.log("\n\n\n")
 
 async function startDB(){
@@ -87,7 +85,6 @@ async function startDB(){
   await Database.insertServerSettings(
       process.env.CACHE_FILESYSTEM_DIR!,
       process.env.LOG_LEVEL,
-      process.env.CACHE_MAX_GB,
       process.env.CACHE_ROOT_DOMAIN
   )
 
