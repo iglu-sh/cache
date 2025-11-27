@@ -84,8 +84,8 @@ async function startDB(){
   //Insert the default cache if it does not exist
   await Database.insertServerSettings(
       process.env.CACHE_FILESYSTEM_DIR!,
-      process.env.LOG_LEVEL,
-      process.env.CACHE_ROOT_DOMAIN
+      process.env.LOG_LEVEL!,
+      process.env.CACHE_ROOT_DOMAIN!
   )
 
   await Database.getAllCaches().then(async (caches:Array<cacheWithKeys>)=>{
