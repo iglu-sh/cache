@@ -209,14 +209,21 @@ app.use((req:Request, res:Response) => {
 app.listen(3000)
 
 // check if CACHE_ROOT_DOMAIN is set correctly
-try{
-  const test = await fetch(process.env.CACHE_ROOT_DOMAIN + "/api/v1/healthcheck")
-  if(test.status != 200){
-    Logger.error("Invalid CACHE_ROOT_DOMAIN ENV!")
-    exit(1)
+for(let i = 0; i <= 5; i++){
+  if(i == 5){
+    Logger.error("Invalid 'CACHE_ROOT_DOMAIN' ENV could not be reached!")
+    process.exit(1)
   }
-}catch(e){
-  Logger.error("Invalid 'CACHE_ROOT_DOMAIN' ENV!")
-  exit(1)
-}
 
+  try{
+    const test = await fetch(process.env.CACHE_ROOT_DOMAIN + "/api/v1/healthcheck")
+    if(test.status != 200){
+      Logger.warn("Can't reach 'CACHE_ROOT_DOMAIN'!")
+    }else{
+      break
+    }
+  }catch(e){
+    Logger.warn("Can't reach 'CACHE_ROOT_DOMAIN'!")
+  }
+  await new Promise((r) => setTimeout(r, 5000))
+}
