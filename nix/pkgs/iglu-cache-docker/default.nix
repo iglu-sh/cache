@@ -1,5 +1,6 @@
 { dockerTools
 , iglu
+, bash
 , stdenv
 }:
 
@@ -12,6 +13,7 @@ dockerTools.buildLayeredImage {
 
   contents = [
     iglu.iglu-cache
+    bash
   ];
 
   config = {
